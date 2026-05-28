@@ -1,33 +1,26 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ProjectsTable } from "@/components/projects-table";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MetricCards } from "@/components/metric-cards";
-import { getProjects } from "@/lib/vercel";
+import { ProjectsView } from "@/components/projects-view";
+import { getProjects, toDisplayProject } from "@/lib/vercel";
 import { Layers } from "lucide-react";
 
 async function DashboardContent() {
   const allProjects = await getProjects();
-  const projects = allProjects.filter(
+  const vercelProjects = allProjects
+    .filter((p) => p.id !== process.env.VERCEL_PROJECT_ID)
+    .map(toDisplayProject);
+
+  const rawProjects = allProjects.filter(
     (p) => p.id !== process.env.VERCEL_PROJECT_ID
   );
 
   return (
     <div className="space-y-6">
-      <MetricCards projects={projects} />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Projects</CardTitle>
-          <CardDescription>
-            {projects.length} project{projects.length !== 1 ? "s" : ""} στο Vercel account σου
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ProjectsTable projects={projects} />
-        </CardContent>
-      </Card>
+      <MetricCards projects={rawProjects} />
+      <ProjectsView vercelProjects={vercelProjects} />
     </div>
   );
 }

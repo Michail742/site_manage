@@ -8,7 +8,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
-import { type VercelProject, type DeploymentState } from "@/lib/vercel";
+import { type DeploymentState } from "@/lib/vercel";
+import { type DisplayProject } from "@/lib/types";
 
 const STATUS_MAP: Record<
   DeploymentState,
@@ -40,7 +41,7 @@ function formatDate(ms: number) {
 }
 
 interface ProjectsTableProps {
-  projects: VercelProject[];
+  projects: DisplayProject[];
 }
 
 export function ProjectsTable({ projects }: ProjectsTableProps) {
@@ -64,42 +65,46 @@ export function ProjectsTable({ projects }: ProjectsTableProps) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {projects.map((project) => {
-          const latest = project.latestDeployments?.[0];
-          return (
-            <TableRow key={project.id}>
-              <TableCell className="font-medium">{project.name}</TableCell>
-              <TableCell className="text-muted-foreground capitalize">
-                {project.framework ?? "—"}
-              </TableCell>
-              <TableCell>
-                {latest ? (
-                  <StatusBadge state={latest.readyState} />
-                ) : (
-                  <span className="text-muted-foreground text-sm">No deployments</span>
-                )}
-              </TableCell>
-              <TableCell className="text-muted-foreground text-sm">
-                {latest ? formatDate(latest.createdAt) : "—"}
-              </TableCell>
-              <TableCell className="text-right">
-                {latest?.url ? (
-                  <a
-                    href={`https://${latest.url}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                  >
-                    {latest.url.split(".")[0]}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                ) : (
-                  <span className="text-muted-foreground text-sm">—</span>
-                )}
-              </TableCell>
-            </TableRow>
-          );
-        })}
+        {projects.map((project) => (
+          <TableRow key={project.id}>
+            <TableCell className="font-medium">
+              <span>{project.name}</span>
+              {project.manual && (
+                <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1.5">
+                  manual
+                </Badge>
+              )}
+            </TableCell>
+            <TableCell className="text-muted-foreground capitalize">
+              {project.framework ?? "—"}
+            </TableCell>
+            <TableCell>
+              {project.status ? (
+                <StatusBadge state={project.status} />
+              ) : (
+                <span className="text-muted-foreground text-sm">No deployments</span>
+              )}
+            </TableCell>
+            <TableCell className="text-muted-foreground text-sm">
+              {project.deployedAt ? formatDate(project.deployedAt) : "—"}
+            </TableCell>
+            <TableCell className="text-right">
+              {project.url ? (
+                <a
+                  href={project.url.startsWith("http") ? project.url : `https://${project.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  {project.url.replace(/^https?:\/\//, "").split(".")[0]}
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              ) : (
+                <span className="text-muted-foreground text-sm">—</span>
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
       </TableBody>
     </Table>
   );

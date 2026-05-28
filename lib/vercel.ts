@@ -1,3 +1,5 @@
+import { type DisplayProject } from "@/lib/types";
+
 const VERCEL_API = "https://api.vercel.com";
 
 export type DeploymentState =
@@ -57,4 +59,17 @@ export async function getProjects(): Promise<VercelProject[]> {
   } while (until);
 
   return all;
+}
+
+export function toDisplayProject(p: VercelProject): DisplayProject {
+  const latest = p.latestDeployments?.[0];
+  return {
+    id: p.id,
+    name: p.name,
+    framework: p.framework,
+    status: latest?.readyState ?? null,
+    deployedAt: latest?.createdAt ?? null,
+    url: latest?.url ?? null,
+    manual: false,
+  };
 }
