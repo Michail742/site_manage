@@ -8,6 +8,7 @@ export interface DisplayProject {
   deployedAt: number | null;
   url: string | null;
   manual: boolean;
+  enabled: boolean;
 }
 
 export interface ManualProject {
@@ -17,6 +18,8 @@ export interface ManualProject {
   status: DeploymentState;
   url: string;
   createdAt: number;
+  // optional: projects saved before the on/off feature don't have it
+  enabled?: boolean;
 }
 
 export function manualToDisplay(p: ManualProject): DisplayProject {
@@ -28,5 +31,6 @@ export function manualToDisplay(p: ManualProject): DisplayProject {
     deployedAt: p.createdAt,
     url: p.url,
     manual: true,
+    enabled: p.enabled ?? true,
   };
 }

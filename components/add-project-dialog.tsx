@@ -61,6 +61,7 @@ export function AddProjectDialog({ onAdd }: AddProjectDialogProps) {
       framework: form.framework,
       status: form.status,
       createdAt: Date.now(),
+      enabled: true,
     });
 
     setForm(empty);

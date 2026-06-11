@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { ExternalLink } from "lucide-react";
 import { type DeploymentState } from "@/lib/vercel";
 import { type DisplayProject } from "@/lib/types";
@@ -42,9 +43,11 @@ function formatDate(ms: number) {
 
 interface ProjectsTableProps {
   projects: DisplayProject[];
+  onToggle: (project: DisplayProject, enabled: boolean) => void;
+  pendingIds: Set<string>;
 }
 
-export function ProjectsTable({ projects }: ProjectsTableProps) {
+export function ProjectsTable({ projects, onToggle, pendingIds }: ProjectsTableProps) {
   if (projects.length === 0) {
     return (
       <p className="text-center text-muted-foreground py-16">
@@ -62,11 +65,15 @@ export function ProjectsTable({ projects }: ProjectsTableProps) {
           <TableHead>Status</TableHead>
           <TableHead>Last Deploy</TableHead>
           <TableHead className="text-right">URL</TableHead>
+          <TableHead className="w-[80px] text-right">On/Off</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {projects.map((project) => (
-          <TableRow key={project.id}>
+          <TableRow
+            key={project.id}
+            className={!project.enabled ? "opacity-50" : undefined}
+          >
             <TableCell className="font-medium">
               <span>{project.name}</span>
               {project.manual && (
@@ -102,6 +109,14 @@ export function ProjectsTable({ projects }: ProjectsTableProps) {
               ) : (
                 <span className="text-muted-foreground text-sm">—</span>
               )}
+            </TableCell>
+            <TableCell className="text-right">
+              <Switch
+                checked={project.enabled}
+                disabled={pendingIds.has(project.id)}
+                onCheckedChange={(checked) => onToggle(project, checked)}
+                aria-label={`${project.enabled ? "Απενεργοποίηση" : "Ενεργοποίηση"} ${project.name}`}
+              />
             </TableCell>
           </TableRow>
         ))}

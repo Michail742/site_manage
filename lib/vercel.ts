@@ -14,6 +14,7 @@ export interface VercelProject {
   name: string;
   framework: string | null;
   updatedAt: number;
+  paused?: boolean;
   latestDeployments: {
     uid: string;
     url: string;
@@ -45,7 +46,7 @@ export async function getProjects(): Promise<VercelProject[]> {
 
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
-      next: { revalidate: 60 },
+      next: { revalidate: 60, tags: ["projects"] },
     });
 
     if (!res.ok) {
@@ -61,6 +62,24 @@ export async function getProjects(): Promise<VercelProject[]> {
   return all;
 }
 
+export async function setProjectPaused(projectId: string, paused: boolean) {
+  const token = process.env.VERCEL_TOKEN;
+  if (!token) throw new Error("VERCEL_TOKEN is not set");
+
+  const res = await fetch(
+    `${VERCEL_API}/v1/projects/${projectId}/${paused ? "pause" : "unpause"}`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Vercel API error ${res.status}: ${body}`);
+  }
+}
+
 export function toDisplayProject(p: VercelProject): DisplayProject {
   const latest = p.latestDeployments?.[0];
   return {
@@ -71,5 +90,6 @@ export function toDisplayProject(p: VercelProject): DisplayProject {
     deployedAt: latest?.createdAt ?? null,
     url: latest?.url ?? null,
     manual: false,
+    enabled: !p.paused,
   };
 }
