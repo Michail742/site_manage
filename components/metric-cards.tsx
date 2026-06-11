@@ -11,7 +11,7 @@ function calcMetrics(projects: VercelProject[]) {
 
   for (const p of projects) {
     const latest = p.latestDeployments?.[0];
-    if (latest?.readyState === "READY") ready++;
+    if (latest?.readyState === "READY" && !p.paused) ready++;
     if (latest && latest.createdAt >= sevenDaysAgo) recentDeploys++;
   }
 
