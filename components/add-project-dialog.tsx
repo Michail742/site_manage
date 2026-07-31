@@ -125,6 +125,7 @@ export function AddProjectDialog({ onAdd }: AddProjectDialogProps) {
             <div className="space-y-1.5">
               <Label>Status</Label>
               <Select
+                items={STATUSES}
                 value={form.status}
                 onValueChange={(v) => set("status", (v ?? "READY") as DeploymentState)}
               >
