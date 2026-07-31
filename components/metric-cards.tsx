@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Globe, Activity, RefreshCw, TrendingUp } from "lucide-react";
+import { Globe, Activity, RefreshCw } from "lucide-react";
 import { type VercelProject } from "@/lib/vercel";
 
 function calcMetrics(projects: VercelProject[]) {
@@ -35,7 +35,6 @@ export function MetricCards({ projects }: MetricCardsProps) {
     icon: React.ElementType;
     iconColor: string;
     iconBg: string;
-    muted?: boolean;
   }[] = [
     {
       label: "Συνολικά Projects",
@@ -61,20 +60,11 @@ export function MetricCards({ projects }: MetricCardsProps) {
       iconColor: "text-violet-500",
       iconBg: "bg-violet-500/10",
     },
-    {
-      label: "MRR",
-      value: "€350",
-      sub: "mockup — σύνδεση βάσης σύντομα",
-      icon: TrendingUp,
-      iconColor: "text-emerald-500",
-      iconBg: "bg-emerald-500/10",
-      muted: true,
-    },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-      {cards.map(({ label, value, sub, icon: Icon, iconColor, iconBg, muted }) => (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      {cards.map(({ label, value, sub, icon: Icon, iconColor, iconBg }) => (
         <Card key={label} className="relative overflow-hidden">
           <CardContent className="pt-5 pb-5">
             <div className="flex items-start justify-between gap-2">
@@ -82,7 +72,7 @@ export function MetricCards({ projects }: MetricCardsProps) {
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">
                   {label}
                 </p>
-                <p className={`text-2xl font-bold tracking-tight ${muted ? "text-muted-foreground" : ""}`}>
+                <p className="text-2xl font-bold tracking-tight">
                   {value}
                 </p>
                 <p className="text-xs text-muted-foreground leading-snug">{sub}</p>
