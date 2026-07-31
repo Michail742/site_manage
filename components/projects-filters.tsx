@@ -23,10 +23,20 @@ const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "CANCELED", label: "Canceled" },
 ];
 
+export type RenewalFilter = "all" | "due" | "overdue" | "none";
+
+const RENEWAL_OPTIONS: { value: RenewalFilter; label: string }[] = [
+  { value: "all", label: "Όλες οι ανανεώσεις" },
+  { value: "due", label: "Λήγουν σύντομα" },
+  { value: "overdue", label: "Έληξαν" },
+  { value: "none", label: "Χωρίς υπενθύμιση" },
+];
+
 export interface FiltersState {
   search: string;
   status: StatusFilter;
   framework: string;
+  renewal: RenewalFilter;
   onlineOnly: boolean;
 }
 
@@ -34,6 +44,7 @@ export const emptyFilters: FiltersState = {
   search: "",
   status: "all",
   framework: "all",
+  renewal: "all",
   onlineOnly: false,
 };
 
@@ -42,6 +53,7 @@ export function isFiltersActive(f: FiltersState) {
     f.search.trim() !== "" ||
     f.status !== "all" ||
     f.framework !== "all" ||
+    f.renewal !== "all" ||
     f.onlineOnly
   );
 }
@@ -107,6 +119,23 @@ export function ProjectsFilters({ value, onChange, frameworks }: ProjectsFilters
         <SelectContent>
           {frameworkOptions.map(({ value: v, label }) => (
             <SelectItem key={v} value={v} className={v === "all" ? "" : "capitalize"}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        items={RENEWAL_OPTIONS}
+        value={value.renewal}
+        onValueChange={(v) => set("renewal", (v ?? "all") as RenewalFilter)}
+      >
+        <SelectTrigger className="h-9 w-full sm:w-[180px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {RENEWAL_OPTIONS.map(({ value: v, label }) => (
+            <SelectItem key={v} value={v}>
               {label}
             </SelectItem>
           ))}

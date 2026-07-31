@@ -15,13 +15,15 @@ import {
 } from "@/components/projects-filters";
 import { type DisplayProject, type ManualProject, manualToDisplay } from "@/lib/types";
 import { useManualProjects, saveManualProjects } from "@/lib/manual-projects";
+import { type ReminderView, reminderStatus } from "@/lib/reminders";
 import { setProjectEnabled, scanProjects } from "@/app/actions";
 
 interface ProjectsViewProps {
   vercelProjects: DisplayProject[];
+  reminders: Record<string, ReminderView>;
 }
 
-export function ProjectsView({ vercelProjects }: ProjectsViewProps) {
+export function ProjectsView({ vercelProjects, reminders }: ProjectsViewProps) {
   const router = useRouter();
   const manualProjects = useManualProjects();
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
@@ -89,6 +91,16 @@ export function ProjectsView({ vercelProjects }: ProjectsViewProps) {
     if (filters.status !== "all" && p.status !== filters.status) return false;
     if (filters.framework !== "all" && p.framework !== filters.framework) return false;
     if (filters.onlineOnly && !p.enabled) return false;
+
+    if (filters.renewal !== "all") {
+      const reminder = reminders[p.id];
+      if (filters.renewal === "none") return !reminder;
+      if (!reminder) return false;
+      const status = reminderStatus(reminder.daysUntil);
+      if (filters.renewal === "overdue" && status !== "overdue") return false;
+      if (filters.renewal === "due" && status !== "soon") return false;
+    }
+
     return true;
   });
 
@@ -116,7 +128,13 @@ export function ProjectsView({ vercelProjects }: ProjectsViewProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <ProjectsFilters value={filters} onChange={setFilters} frameworks={frameworks} />
-        <ProjectsTable projects={filtered} onToggle={handleToggle} pendingIds={pendingIds} />
+        <ProjectsTable
+          projects={filtered}
+          reminders={reminders}
+          onToggle={handleToggle}
+          onReminderChanged={() => router.refresh()}
+          pendingIds={pendingIds}
+        />
       </CardContent>
     </Card>
   );

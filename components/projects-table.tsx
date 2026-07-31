@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { ExternalLink } from "lucide-react";
 import { type DeploymentState } from "@/lib/vercel";
 import { type DisplayProject } from "@/lib/types";
+import { type ReminderView, reminderStatus } from "@/lib/reminders";
+import { ReminderDialog } from "@/components/reminder-dialog";
 
 const STATUS_MAP: Record<
   DeploymentState,
@@ -41,13 +43,51 @@ function formatDate(ms: number) {
   }).format(new Date(ms));
 }
 
+function RenewalCell({ reminder }: { reminder: ReminderView }) {
+  const status = reminderStatus(reminder.daysUntil);
+  const days = Math.abs(reminder.daysUntil);
+
+  const label =
+    status === "overdue"
+      ? `Έληξε πριν ${days} ${days === 1 ? "μέρα" : "μέρες"}`
+      : reminder.daysUntil === 0
+        ? "Λήγει σήμερα"
+        : `Σε ${days} ${days === 1 ? "μέρα" : "μέρες"}`;
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-sm">{reminder.renewalDate}</span>
+      <span
+        className={
+          status === "overdue"
+            ? "text-xs text-destructive"
+            : status === "soon"
+              ? "text-xs text-yellow-600 dark:text-yellow-500"
+              : "text-xs text-muted-foreground"
+        }
+      >
+        {label}
+        {reminder.amount !== null && ` · ${reminder.amount}€`}
+      </span>
+    </div>
+  );
+}
+
 interface ProjectsTableProps {
   projects: DisplayProject[];
+  reminders: Record<string, ReminderView>;
   onToggle: (project: DisplayProject, enabled: boolean) => void;
+  onReminderChanged: () => void;
   pendingIds: Set<string>;
 }
 
-export function ProjectsTable({ projects, onToggle, pendingIds }: ProjectsTableProps) {
+export function ProjectsTable({
+  projects,
+  reminders,
+  onToggle,
+  onReminderChanged,
+  pendingIds,
+}: ProjectsTableProps) {
   if (projects.length === 0) {
     return (
       <p className="text-center text-muted-foreground py-16">
@@ -64,6 +104,7 @@ export function ProjectsTable({ projects, onToggle, pendingIds }: ProjectsTableP
           <TableHead>Framework</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Last Deploy</TableHead>
+          <TableHead className="w-[190px]">Ανανέωση</TableHead>
           <TableHead className="text-right">URL</TableHead>
           <TableHead className="w-[80px] text-right">On/Off</TableHead>
         </TableRow>
@@ -94,6 +135,20 @@ export function ProjectsTable({ projects, onToggle, pendingIds }: ProjectsTableP
             </TableCell>
             <TableCell className="text-muted-foreground text-sm">
               {project.deployedAt ? formatDate(project.deployedAt) : "—"}
+            </TableCell>
+            <TableCell>
+              <div className="flex items-center gap-1">
+                {reminders[project.id] ? (
+                  <RenewalCell reminder={reminders[project.id]} />
+                ) : (
+                  <span className="text-muted-foreground text-sm">—</span>
+                )}
+                <ReminderDialog
+                  project={project}
+                  reminder={reminders[project.id] ?? null}
+                  onChanged={onReminderChanged}
+                />
+              </div>
             </TableCell>
             <TableCell className="text-right">
               {project.url ? (

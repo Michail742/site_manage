@@ -2,6 +2,12 @@
 
 import { updateTag } from "next/cache";
 import { setProjectPaused } from "@/lib/vercel";
+import {
+  upsertReminder,
+  deleteReminder,
+  markNotifiedAndRenew,
+  type ReminderInput,
+} from "@/lib/reminders";
 
 export async function setProjectEnabled(projectId: string, enabled: boolean) {
   await setProjectPaused(projectId, !enabled);
@@ -10,4 +16,21 @@ export async function setProjectEnabled(projectId: string, enabled: boolean) {
 
 export async function scanProjects() {
   updateTag("projects");
+}
+
+export async function saveReminder(input: ReminderInput) {
+  if (!input.projectId) throw new Error("Λείπει το project id");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.renewalDate)) {
+    throw new Error("Μη έγκυρη ημερομηνία ανανέωσης");
+  }
+  await upsertReminder(input);
+}
+
+export async function removeReminder(projectId: string) {
+  await deleteReminder(projectId);
+}
+
+/** Μετά την αποστολή του email: καταγραφή + μετάθεση ένα έτος μπροστά. */
+export async function confirmReminderSent(projectId: string) {
+  await markNotifiedAndRenew(projectId);
 }

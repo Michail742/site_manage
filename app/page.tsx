@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MetricCards } from "@/components/metric-cards";
 import { ProjectsView } from "@/components/projects-view";
 import { getProjects, toDisplayProject } from "@/lib/vercel";
+import { getReminders } from "@/lib/reminders";
 import { Layers } from "lucide-react";
 
 async function DashboardContent() {
-  const allProjects = await getProjects();
+  const [allProjects, reminders] = await Promise.all([getProjects(), getReminders()]);
   const vercelProjects = allProjects
     .filter((p) => p.id !== process.env.VERCEL_PROJECT_ID)
     .map(toDisplayProject);
@@ -20,7 +21,7 @@ async function DashboardContent() {
   return (
     <div className="space-y-6">
       <MetricCards projects={rawProjects} />
-      <ProjectsView vercelProjects={vercelProjects} />
+      <ProjectsView vercelProjects={vercelProjects} reminders={reminders} />
     </div>
   );
 }
