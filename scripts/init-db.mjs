@@ -51,6 +51,17 @@ await sql`
   ON CONFLICT (id) DO NOTHING
 `;
 
+// anyweather-crm, anyweather-home και yachtshelter είναι δικά της (Cloudflare
+// Pages, όχι Vercel) — μπαίνουν χειροκίνητα όπως το anyweather και ομαδοποιούνται
+// κάτω από αυτό παρακάτω.
+await sql`
+  INSERT INTO manual_projects (id, name, url, framework, status) VALUES
+    ('seed_anyweather_crm', 'anyweather-crm', 'https://anyweather-crm.pages.dev', 'other', 'READY'),
+    ('seed_anyweather_home', 'anyweather-home', 'https://home.anyweather.gr', 'react', 'READY'),
+    ('seed_yachtshelter', 'yachtshelter', 'https://yachtshelter.pages.dev', 'other', 'READY')
+  ON CONFLICT (id) DO NOTHING
+`;
+
 await sql`
   CREATE TABLE IF NOT EXISTS project_groups (
     child_id   TEXT PRIMARY KEY,
@@ -67,6 +78,15 @@ await sql`
     ('prj_KfaSo73u9D4BFPhwZR55lJwIV272', 'prj_mAhPlaeEZV1k0c6vz3kk1sde2Rj6'),
     ('prj_tkJb0Zmovv3XF0cbDODNfXOKydiD', 'prj_mAhPlaeEZV1k0c6vz3kk1sde2Rj6'),
     ('prj_0lC0KvUF1QO5gcreGsJzCo447iCN', 'prj_mAhPlaeEZV1k0c6vz3kk1sde2Rj6')
+  ON CONFLICT (child_id) DO NOTHING
+`;
+
+// anyweather-crm / anyweather-home / yachtshelter ζουν κάτω από το anyweather.
+await sql`
+  INSERT INTO project_groups (child_id, parent_id) VALUES
+    ('seed_anyweather_crm', 'seed_anyweather'),
+    ('seed_anyweather_home', 'seed_anyweather'),
+    ('seed_yachtshelter', 'seed_anyweather')
   ON CONFLICT (child_id) DO NOTHING
 `;
 
