@@ -1,75 +1,58 @@
-"use client";
-
-import { useSyncExternalStore } from "react";
+import { getSql } from "@/lib/db";
 import { type ManualProject } from "@/lib/types";
-import { SEED_MANUAL_PROJECTS } from "@/lib/seed-projects";
+import { type DeploymentState } from "@/lib/vercel";
 
-const LS_KEY = "site_manage_manual_projects";
-
-// Σταθερή αναφορά για το server snapshot — αν επιστρέφαμε νέο [] κάθε φορά,
-// το useSyncExternalStore θα έμπαινε σε ατέρμονο render loop.
-const EMPTY: ManualProject[] = [];
-
-const listeners = new Set<() => void>();
-let cache: ManualProject[] | null = null;
-
-function read(): ManualProject[] {
-  let stored: ManualProject[] = [];
-  try {
-    stored = JSON.parse(localStorage.getItem(LS_KEY) ?? "[]");
-  } catch {
-    stored = [];
-  }
-
-  // Τα seeds μπαίνουν μόνο αν λείπουν — ό,τι είναι ήδη αποθηκευμένο
-  // (π.χ. αλλαγμένο on/off) κερδίζει.
-  const storedIds = new Set(stored.map((p) => p.id));
-  const missing = SEED_MANUAL_PROJECTS.filter((p) => !storedIds.has(p.id));
-
-  return missing.length > 0 ? [...stored, ...missing] : stored;
+interface Row {
+  id: string;
+  name: string;
+  url: string;
+  framework: string;
+  status: DeploymentState;
+  enabled: boolean;
+  created_at: string;
 }
 
-function emit() {
-  for (const listener of listeners) listener();
-}
-
-function handleStorage(e: StorageEvent) {
-  // e.key === null σημαίνει localStorage.clear()
-  if (e.key !== null && e.key !== LS_KEY) return;
-  cache = null;
-  emit();
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  if (listeners.size === 1) {
-    window.addEventListener("storage", handleStorage);
-  }
-  return () => {
-    listeners.delete(listener);
-    if (listeners.size === 0) {
-      window.removeEventListener("storage", handleStorage);
-    }
+function toManualProject(row: Row): ManualProject {
+  return {
+    id: row.id,
+    name: row.name,
+    url: row.url,
+    framework: row.framework,
+    status: row.status,
+    enabled: row.enabled,
+    createdAt: new Date(row.created_at).getTime(),
   };
 }
 
-// Το snapshot πρέπει να είναι referentially stable ανάμεσα σε renders,
-// αλλιώς το React θεωρεί ότι ο store άλλαξε σε κάθε render.
-function getSnapshot(): ManualProject[] {
-  cache ??= read();
-  return cache;
+export async function getManualProjects(): Promise<ManualProject[]> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT id, name, url, framework, status, enabled, created_at
+    FROM manual_projects
+    ORDER BY created_at ASC
+  `) as Row[];
+
+  return rows.map(toManualProject);
 }
 
-function getServerSnapshot(): ManualProject[] {
-  return EMPTY;
+export interface ManualProjectInput {
+  id: string;
+  name: string;
+  url: string;
+  framework: string;
+  status: DeploymentState;
 }
 
-export function saveManualProjects(next: ManualProject[]) {
-  cache = next;
-  localStorage.setItem(LS_KEY, JSON.stringify(next));
-  emit();
+export async function addManualProject(input: ManualProjectInput) {
+  const sql = getSql();
+  await sql`
+    INSERT INTO manual_projects (id, name, url, framework, status)
+    VALUES (${input.id}, ${input.name}, ${input.url}, ${input.framework}, ${input.status})
+    ON CONFLICT (id) DO NOTHING
+  `;
 }
 
-export function useManualProjects(): ManualProject[] {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+export async function setManualProjectEnabled(id: string, enabled: boolean) {
+  const sql = getSql();
+  await sql`UPDATE manual_projects SET enabled = ${enabled} WHERE id = ${id}`;
 }

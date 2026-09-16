@@ -34,7 +34,10 @@ function StatusBadge({ state }: { state: DeploymentState }) {
 }
 
 function formatDate(ms: number) {
+  // Pinned timezone: server (UTC) and client (Europe/Athens) must agree,
+  // otherwise the text differs between SSR and hydration (React #418).
   return new Intl.DateTimeFormat("el-GR", {
+    timeZone: "Europe/Athens",
     day: "2-digit",
     month: "short",
     year: "numeric",

@@ -30,5 +30,27 @@ await sql`
   ON project_reminders (renewal_date)
 `;
 
-const [{ count }] = await sql`SELECT count(*)::int AS count FROM project_reminders`;
-console.log(`✓ schema έτοιμο — ${count} reminders στον πίνακα`);
+await sql`
+  CREATE TABLE IF NOT EXISTS manual_projects (
+    id          TEXT PRIMARY KEY,
+    name        TEXT NOT NULL,
+    url         TEXT NOT NULL DEFAULT '',
+    framework   TEXT NOT NULL DEFAULT '',
+    status      TEXT NOT NULL DEFAULT 'READY',
+    enabled     BOOLEAN NOT NULL DEFAULT true,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  )
+`;
+
+// Projects εκτός Vercel που θέλουμε να υπάρχουν πάντα στη λίστα — πρώην
+// lib/seed-projects.ts. Ένθετο εδώ, ώστε να τρέχει σε plain Node χωρίς
+// TypeScript loader. ON CONFLICT DO NOTHING ώστε να τρέχει ξανά με ασφάλεια.
+await sql`
+  INSERT INTO manual_projects (id, name, url, framework, status, created_at)
+  VALUES ('seed_anyweather', 'anyweather', 'https://anyweather.pages.dev/', 'other', 'READY', to_timestamp(0))
+  ON CONFLICT (id) DO NOTHING
+`;
+
+const [{ count: reminderCount }] = await sql`SELECT count(*)::int AS count FROM project_reminders`;
+const [{ count: manualCount }] = await sql`SELECT count(*)::int AS count FROM manual_projects`;
+console.log(`✓ schema έτοιμο — ${reminderCount} reminders, ${manualCount} manual projects`);

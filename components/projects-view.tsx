@@ -14,18 +14,23 @@ import {
   type FiltersState,
 } from "@/components/projects-filters";
 import { type DisplayProject, type ManualProject, manualToDisplay } from "@/lib/types";
-import { useManualProjects, saveManualProjects } from "@/lib/manual-projects";
+import { type ManualProjectInput } from "@/lib/manual-projects";
 import { type ReminderView, reminderStatus } from "@/lib/reminders";
-import { setProjectEnabled, scanProjects } from "@/app/actions";
+import {
+  setProjectEnabled,
+  addManualProject,
+  setManualProjectEnabled,
+  scanProjects,
+} from "@/app/actions";
 
 interface ProjectsViewProps {
   vercelProjects: DisplayProject[];
+  manualProjects: ManualProject[];
   reminders: Record<string, ReminderView>;
 }
 
-export function ProjectsView({ vercelProjects, reminders }: ProjectsViewProps) {
+export function ProjectsView({ vercelProjects, manualProjects, reminders }: ProjectsViewProps) {
   const router = useRouter();
-  const manualProjects = useManualProjects();
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState(false);
   const [filters, setFilters] = useState<FiltersState>(emptyFilters);
@@ -44,23 +49,28 @@ export function ProjectsView({ vercelProjects, reminders }: ProjectsViewProps) {
     setScanning(false);
   }
 
-  function handleAdd(project: ManualProject) {
-    saveManualProjects([...manualProjects, project]);
+  function handleAdd(input: ManualProjectInput) {
+    startTransition(async () => {
+      try {
+        await addManualProject(input);
+        router.refresh();
+      } catch (err) {
+        console.error("Αποτυχία προσθήκης project:", err);
+      }
+    });
   }
 
   function handleToggle(project: DisplayProject, enabled: boolean) {
-    if (project.manual) {
-      saveManualProjects(
-        manualProjects.map((p) => (p.id === project.id ? { ...p, enabled } : p))
-      );
-      return;
-    }
-
     setPendingIds((ids) => new Set(ids).add(project.id));
     startTransition(async () => {
       addEnabledOverride([project.id, enabled]);
       try {
-        await setProjectEnabled(project.id, enabled);
+        if (project.manual) {
+          await setManualProjectEnabled(project.id, enabled);
+        } else {
+          await setProjectEnabled(project.id, enabled);
+        }
+        router.refresh();
       } catch (err) {
         console.error("Αποτυχία αλλαγής κατάστασης project:", err);
       } finally {
@@ -78,7 +88,10 @@ export function ProjectsView({ vercelProjects, reminders }: ProjectsViewProps) {
       ...p,
       enabled: enabledOverrides[p.id] ?? p.enabled,
     })),
-    ...manualProjects.map(manualToDisplay),
+    ...manualProjects.map(manualToDisplay).map((p) => ({
+      ...p,
+      enabled: enabledOverrides[p.id] ?? p.enabled,
+    })),
   ];
 
   const frameworks = Array.from(

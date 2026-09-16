@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-import { type ManualProject } from "@/lib/types";
+import { type ManualProjectInput } from "@/lib/manual-projects";
 import { type DeploymentState } from "@/lib/vercel";
 
 const FRAMEWORKS = ["nextjs", "react", "vue", "nuxt", "astro", "svelte", "remix", "other"];
@@ -39,7 +39,7 @@ interface FormState {
 const empty: FormState = { name: "", url: "", framework: "", status: "READY" };
 
 interface AddProjectDialogProps {
-  onAdd: (project: ManualProject) => void;
+  onAdd: (project: ManualProjectInput) => void;
 }
 
 export function AddProjectDialog({ onAdd }: AddProjectDialogProps) {
@@ -55,13 +55,11 @@ export function AddProjectDialog({ onAdd }: AddProjectDialogProps) {
     if (!form.name.trim()) return;
 
     onAdd({
-      id: `manual_${Date.now()}`,
+      id: crypto.randomUUID(),
       name: form.name.trim(),
       url: form.url.trim(),
       framework: form.framework,
       status: form.status,
-      createdAt: Date.now(),
-      enabled: true,
     });
 
     setForm(empty);

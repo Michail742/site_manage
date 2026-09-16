@@ -8,10 +8,24 @@ import {
   markNotifiedAndRenew,
   type ReminderInput,
 } from "@/lib/reminders";
+import {
+  addManualProject as addManualProjectDb,
+  setManualProjectEnabled as setManualProjectEnabledDb,
+  type ManualProjectInput,
+} from "@/lib/manual-projects";
 
 export async function setProjectEnabled(projectId: string, enabled: boolean) {
   await setProjectPaused(projectId, !enabled);
   updateTag("projects");
+}
+
+export async function addManualProject(input: ManualProjectInput) {
+  if (!input.name.trim()) throw new Error("Λείπει το όνομα του project");
+  await addManualProjectDb(input);
+}
+
+export async function setManualProjectEnabled(projectId: string, enabled: boolean) {
+  await setManualProjectEnabledDb(projectId, enabled);
 }
 
 export async function scanProjects() {
