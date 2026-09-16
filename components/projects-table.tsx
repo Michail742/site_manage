@@ -16,6 +16,7 @@ import { type DeploymentState } from "@/lib/vercel";
 import { type DisplayProject } from "@/lib/types";
 import { type ReminderView, reminderStatus } from "@/lib/reminders";
 import { ReminderDialog } from "@/components/reminder-dialog";
+import { ProjectMetaDialog } from "@/components/project-meta-dialog";
 
 const STATUS_MAP: Record<
   DeploymentState,
@@ -85,6 +86,7 @@ interface ProjectsTableProps {
   groups: Record<string, string>;
   onToggle: (project: DisplayProject, enabled: boolean) => void;
   onReminderChanged: () => void;
+  onMetaChanged: () => void;
   pendingIds: Set<string>;
 }
 
@@ -166,6 +168,7 @@ export function ProjectsTable({
   groups,
   onToggle,
   onReminderChanged,
+  onMetaChanged,
   pendingIds,
 }: ProjectsTableProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -198,6 +201,7 @@ export function ProjectsTable({
         <TableRow>
           <TableHead className="w-[260px]">Project</TableHead>
           <TableHead>Framework</TableHead>
+          <TableHead>Database</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Last Deploy</TableHead>
           <TableHead className="w-[190px]">Ανανέωση</TableHead>
@@ -243,6 +247,11 @@ export function ProjectsTable({
                   manual
                 </Badge>
               )}
+              {project?.source === "cloudflare" && (
+                <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1.5">
+                  Cloudflare
+                </Badge>
+              )}
             </TableCell>
           );
 
@@ -252,7 +261,7 @@ export function ProjectsTable({
             return (
               <TableRow key={id}>
                 {nameCell}
-                <TableCell colSpan={6} />
+                <TableCell colSpan={7} />
               </TableRow>
             );
           }
@@ -263,8 +272,14 @@ export function ProjectsTable({
               className={!project.enabled ? "opacity-50" : undefined}
             >
               {nameCell}
-              <TableCell className="text-muted-foreground capitalize">
-                {project.framework ?? "—"}
+              <TableCell className="text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <span className="capitalize">{project.framework ?? "—"}</span>
+                  <ProjectMetaDialog project={project} onChanged={onMetaChanged} />
+                </div>
+              </TableCell>
+              <TableCell className="text-muted-foreground">
+                {project.database ?? "—"}
               </TableCell>
               <TableCell>
                 {project.status ? (
@@ -306,12 +321,18 @@ export function ProjectsTable({
                 )}
               </TableCell>
               <TableCell className="text-right">
-                <Switch
-                  checked={project.enabled}
-                  disabled={pendingIds.has(project.id)}
-                  onCheckedChange={(checked) => onToggle(project, checked)}
-                  aria-label={`${project.enabled ? "Απενεργοποίηση" : "Ενεργοποίηση"} ${project.name}`}
-                />
+                {project.toggleable ? (
+                  <Switch
+                    checked={project.enabled}
+                    disabled={pendingIds.has(project.id)}
+                    onCheckedChange={(checked) => onToggle(project, checked)}
+                    aria-label={`${project.enabled ? "Απενεργοποίηση" : "Ενεργοποίηση"} ${project.name}`}
+                  />
+                ) : (
+                  <span className="text-muted-foreground text-xs" title="Δεν υποστηρίζεται on/off για Cloudflare Pages">
+                    —
+                  </span>
+                )}
               </TableCell>
             </TableRow>
           );

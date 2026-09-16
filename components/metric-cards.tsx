@@ -1,18 +1,17 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Globe, Activity, RefreshCw } from "lucide-react";
-import { type VercelProject } from "@/lib/vercel";
+import { type DisplayProject } from "@/lib/types";
 
-function calcMetrics(projects: VercelProject[]) {
+function calcMetrics(projects: DisplayProject[]) {
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   let ready = 0;
   let recentDeploys = 0;
 
   for (const p of projects) {
-    const latest = p.latestDeployments?.[0];
-    if (latest?.readyState === "READY" && !p.paused) ready++;
-    if (latest && latest.createdAt >= sevenDaysAgo) recentDeploys++;
+    if (p.status === "READY" && p.enabled) ready++;
+    if (p.deployedAt && p.deployedAt >= sevenDaysAgo) recentDeploys++;
   }
 
   const uptimePct =
@@ -22,7 +21,7 @@ function calcMetrics(projects: VercelProject[]) {
 }
 
 interface MetricCardsProps {
-  projects: VercelProject[];
+  projects: DisplayProject[];
 }
 
 export function MetricCards({ projects }: MetricCardsProps) {
@@ -39,7 +38,7 @@ export function MetricCards({ projects }: MetricCardsProps) {
     {
       label: "Συνολικά Projects",
       value: total,
-      sub: "web projects στο Vercel",
+      sub: "web projects σε Vercel + Cloudflare",
       icon: Globe,
       iconColor: "text-blue-500",
       iconBg: "bg-blue-500/10",

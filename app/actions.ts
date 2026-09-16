@@ -13,6 +13,10 @@ import {
   setManualProjectEnabled as setManualProjectEnabledDb,
   type ManualProjectInput,
 } from "@/lib/manual-projects";
+import {
+  setProjectMeta as setProjectMetaDb,
+  type ProjectMetaInput,
+} from "@/lib/project-meta";
 
 export async function setProjectEnabled(projectId: string, enabled: boolean) {
   await setProjectPaused(projectId, !enabled);
@@ -30,6 +34,10 @@ export async function setManualProjectEnabled(projectId: string, enabled: boolea
 
 export async function scanProjects() {
   updateTag("projects");
+}
+
+export async function saveProjectMeta(input: ProjectMetaInput) {
+  await setProjectMetaDb(input);
 }
 
 export async function saveReminder(input: ReminderInput) {

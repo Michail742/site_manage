@@ -13,8 +13,9 @@ import {
   isFiltersActive,
   type FiltersState,
 } from "@/components/projects-filters";
-import { type DisplayProject, type ManualProject, manualToDisplay } from "@/lib/types";
+import { type DisplayProject, type ManualProject, manualToDisplay, withMeta } from "@/lib/types";
 import { type ManualProjectInput } from "@/lib/manual-projects";
+import { type ProjectMeta } from "@/lib/project-meta";
 import { type ReminderView, reminderStatus } from "@/lib/reminders";
 import {
   setProjectEnabled,
@@ -25,14 +26,18 @@ import {
 
 interface ProjectsViewProps {
   vercelProjects: DisplayProject[];
+  cloudflareProjects: DisplayProject[];
   manualProjects: ManualProject[];
+  meta: Record<string, ProjectMeta>;
   reminders: Record<string, ReminderView>;
   groups: Record<string, string>;
 }
 
 export function ProjectsView({
   vercelProjects,
+  cloudflareProjects,
   manualProjects,
+  meta,
   reminders,
   groups,
 }: ProjectsViewProps) {
@@ -67,11 +72,12 @@ export function ProjectsView({
   }
 
   function handleToggle(project: DisplayProject, enabled: boolean) {
+    if (!project.toggleable) return;
     setPendingIds((ids) => new Set(ids).add(project.id));
     startTransition(async () => {
       addEnabledOverride([project.id, enabled]);
       try {
-        if (project.manual) {
+        if (project.source === "manual") {
           await setManualProjectEnabled(project.id, enabled);
         } else {
           await setProjectEnabled(project.id, enabled);
@@ -89,15 +95,30 @@ export function ProjectsView({
     });
   }
 
+  const liveNames = new Set(
+    [...vercelProjects, ...cloudflareProjects].map((p) => p.name.toLowerCase())
+  );
+
   const all: DisplayProject[] = [
     ...vercelProjects.map((p) => ({
       ...p,
       enabled: enabledOverrides[p.id] ?? p.enabled,
     })),
-    ...manualProjects.map(manualToDisplay).map((p) => ({
+    ...cloudflareProjects.map((p) => ({
       ...p,
       enabled: enabledOverrides[p.id] ?? p.enabled,
     })),
+    ...manualProjects
+      // Χειροκίνητα entries που στο μεταξύ ήρθαν "ζωντανά" από Vercel/Cloudflare
+      // (π.χ. τα παλιά placeholder anyweather-crm/anyweather-home/yachtshelter)
+      // δεν επαναλαμβάνονται — προτεραιότητα στα ζωντανά δεδομένα.
+      .filter((p) => !liveNames.has(p.name.toLowerCase()))
+      .map(manualToDisplay)
+      .map((p) => withMeta(p, meta))
+      .map((p) => ({
+        ...p,
+        enabled: enabledOverrides[p.id] ?? p.enabled,
+      })),
   ];
 
   const frameworks = Array.from(
@@ -153,6 +174,7 @@ export function ProjectsView({
           groups={groups}
           onToggle={handleToggle}
           onReminderChanged={() => router.refresh()}
+          onMetaChanged={() => router.refresh()}
           pendingIds={pendingIds}
         />
       </CardContent>

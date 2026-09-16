@@ -86,10 +86,13 @@ export function toDisplayProject(p: VercelProject): DisplayProject {
     id: p.id,
     name: p.name,
     framework: p.framework,
+    database: null,
     status: latest?.readyState ?? null,
     deployedAt: latest?.createdAt ?? null,
     url: latest?.url ?? null,
     manual: false,
     enabled: !p.paused,
+    source: "vercel",
+    toggleable: true,
   };
 }

@@ -5,32 +5,50 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MetricCards } from "@/components/metric-cards";
 import { ProjectsView } from "@/components/projects-view";
 import { getProjects, toDisplayProject } from "@/lib/vercel";
+import { getPagesProjects, toDisplayProject as cfToDisplayProject } from "@/lib/cloudflare";
 import { getReminders } from "@/lib/reminders";
 import { getManualProjects } from "@/lib/manual-projects";
 import { getProjectGroups } from "@/lib/project-groups";
+import { getProjectMeta } from "@/lib/project-meta";
+import { manualToDisplay, withMeta } from "@/lib/types";
 import { Layers } from "lucide-react";
 
 async function DashboardContent() {
-  const [allProjects, reminders, manualProjects, groups] = await Promise.all([
-    getProjects(),
-    getReminders(),
-    getManualProjects(),
-    getProjectGroups(),
-  ]);
+  const [allProjects, cloudflareResult, reminders, manualProjects, groups, meta] =
+    await Promise.all([
+      getProjects(),
+      getPagesProjects().catch((err) => {
+        console.error("Cloudflare Pages fetch failed:", err);
+        return [];
+      }),
+      getReminders(),
+      getManualProjects(),
+      getProjectGroups(),
+      getProjectMeta(),
+    ]);
   const vercelProjects = allProjects
     .filter((p) => p.id !== process.env.VERCEL_PROJECT_ID)
-    .map(toDisplayProject);
+    .map(toDisplayProject)
+    .map((p) => withMeta(p, meta));
+  const cloudflareProjects = cloudflareResult
+    .map(cfToDisplayProject)
+    .map((p) => withMeta(p, meta));
 
-  const rawProjects = allProjects.filter(
-    (p) => p.id !== process.env.VERCEL_PROJECT_ID
+  const liveNames = new Set(
+    [...vercelProjects, ...cloudflareProjects].map((p) => p.name.toLowerCase())
   );
+  const manualDisplay = manualProjects
+    .filter((p) => !liveNames.has(p.name.toLowerCase()))
+    .map((p) => withMeta(manualToDisplay(p), meta));
 
   return (
     <div className="space-y-6">
-      <MetricCards projects={rawProjects} />
+      <MetricCards projects={[...vercelProjects, ...cloudflareProjects, ...manualDisplay]} />
       <ProjectsView
         vercelProjects={vercelProjects}
+        cloudflareProjects={cloudflareProjects}
         manualProjects={manualProjects}
+        meta={meta}
         reminders={reminders}
         groups={groups}
       />

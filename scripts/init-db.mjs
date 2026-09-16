@@ -42,25 +42,11 @@ await sql`
   )
 `;
 
-// Projects εκτός Vercel που θέλουμε να υπάρχουν πάντα στη λίστα — πρώην
-// lib/seed-projects.ts. Ένθετο εδώ, ώστε να τρέχει σε plain Node χωρίς
-// TypeScript loader. ON CONFLICT DO NOTHING ώστε να τρέχει ξανά με ασφάλεια.
-await sql`
-  INSERT INTO manual_projects (id, name, url, framework, status, created_at)
-  VALUES ('seed_anyweather', 'anyweather', 'https://anyweather.pages.dev/', 'other', 'READY', to_timestamp(0))
-  ON CONFLICT (id) DO NOTHING
-`;
-
-// anyweather-crm, anyweather-home και yachtshelter είναι δικά της (Cloudflare
-// Pages, όχι Vercel) — μπαίνουν χειροκίνητα όπως το anyweather και ομαδοποιούνται
-// κάτω από αυτό παρακάτω.
-await sql`
-  INSERT INTO manual_projects (id, name, url, framework, status) VALUES
-    ('seed_anyweather_crm', 'anyweather-crm', 'https://anyweather-crm.pages.dev', 'other', 'READY'),
-    ('seed_anyweather_home', 'anyweather-home', 'https://home.anyweather.gr', 'react', 'READY'),
-    ('seed_yachtshelter', 'yachtshelter', 'https://yachtshelter.pages.dev', 'other', 'READY')
-  ON CONFLICT (id) DO NOTHING
-`;
+// anyweather / anyweather-crm / anyweather-home / yachtshelter ζούσαν εδώ ως
+// χειροκίνητα placeholder entries πριν υπάρχει live Cloudflare Pages
+// integration (lib/cloudflare.ts) — τώρα έρχονται ζωντανά από το API με το
+// ίδιο "name", οπότε το dedup στο projects-view.tsx τα κρύβει μόνο του. Δεν
+// τα ξαναγράφουμε εδώ πια.
 
 await sql`
   CREATE TABLE IF NOT EXISTS project_groups (
@@ -81,13 +67,14 @@ await sql`
   ON CONFLICT (child_id) DO NOTHING
 `;
 
-// anyweather-crm / anyweather-home / yachtshelter ζουν κάτω από το anyweather.
+// anyweather-crm / anyweather-home / yachtshelter ζουν κάτω από το anyweather,
+// με τα πραγματικά Cloudflare Pages ids (account 7706c7299416c91e5777a6c53c873000).
 await sql`
   INSERT INTO project_groups (child_id, parent_id) VALUES
-    ('seed_anyweather_crm', 'seed_anyweather'),
-    ('seed_anyweather_home', 'seed_anyweather'),
-    ('seed_yachtshelter', 'seed_anyweather')
-  ON CONFLICT (child_id) DO NOTHING
+    ('cf_7706c7299416c91e5777a6c53c873000_f9095fd8-b21e-4eea-ba5c-77457ac3b947', 'cf_7706c7299416c91e5777a6c53c873000_3e88cdcf-0da7-460e-a1e0-a248b05a0652'),
+    ('cf_7706c7299416c91e5777a6c53c873000_6ed0b0a6-4da1-4cf3-be16-03edd21cad2f', 'cf_7706c7299416c91e5777a6c53c873000_3e88cdcf-0da7-460e-a1e0-a248b05a0652'),
+    ('cf_7706c7299416c91e5777a6c53c873000_eb518b2a-6e4b-416f-9b00-2c112a7ca1fe', 'cf_7706c7299416c91e5777a6c53c873000_3e88cdcf-0da7-460e-a1e0-a248b05a0652')
+  ON CONFLICT (child_id) DO UPDATE SET parent_id = EXCLUDED.parent_id
 `;
 
 // Όλα τα υπόλοιπα (εκτός anyweather, που έχει ήδη τη δική του ομάδα) είναι
@@ -105,7 +92,33 @@ await sql`
   ON CONFLICT (child_id) DO NOTHING
 `;
 
+// Χειροκίνητες πινακίδες framework/database ανά project — καμία API (Vercel ή
+// Cloudflare) δεν αναφέρει ποια βάση δεδομένων χρησιμοποιεί ένα project, και
+// το Cloudflare Pages δεν αναφέρει ούτε το framework. `id` = ίδιο id με το
+// Vercel project, ή `cf_<accountId>_<pagesProjectId>` για Cloudflare, ή το
+// manual project id.
+await sql`
+  CREATE TABLE IF NOT EXISTS project_meta (
+    id          TEXT PRIMARY KEY,
+    database    TEXT,
+    framework   TEXT,
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  )
+`;
+
+// Ό,τι ξέρουμε ήδη με σιγουριά· τα υπόλοιπα τα συμπληρώνει ο χρήστης από το UI.
+// (Η βάση του anyweather-crm δεν χρειάζεται εδώ πια — το lib/cloudflare.ts
+// την ανιχνεύει μόνο του από το D1 binding του project.)
+await sql`
+  INSERT INTO project_meta (id, framework)
+  VALUES ('cf_7706c7299416c91e5777a6c53c873000_f9095fd8-b21e-4eea-ba5c-77457ac3b947', 'vanilla (single HTML file)')
+  ON CONFLICT (id) DO UPDATE SET framework = EXCLUDED.framework
+`;
+
 const [{ count: reminderCount }] = await sql`SELECT count(*)::int AS count FROM project_reminders`;
 const [{ count: manualCount }] = await sql`SELECT count(*)::int AS count FROM manual_projects`;
 const [{ count: groupCount }] = await sql`SELECT count(*)::int AS count FROM project_groups`;
-console.log(`✓ schema έτοιμο — ${reminderCount} reminders, ${manualCount} manual projects, ${groupCount} groups`);
+const [{ count: metaCount }] = await sql`SELECT count(*)::int AS count FROM project_meta`;
+console.log(
+  `✓ schema έτοιμο — ${reminderCount} reminders, ${manualCount} manual projects, ${groupCount} groups, ${metaCount} meta`
+);
