@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -8,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { ExternalLink, CornerDownRight } from "lucide-react";
+import { ExternalLink, CornerDownRight, Plus, Minus } from "lucide-react";
 import { type DeploymentState } from "@/lib/vercel";
 import { type DisplayProject } from "@/lib/types";
 import { type ReminderView, reminderStatus } from "@/lib/reminders";
@@ -85,16 +88,24 @@ interface ProjectsTableProps {
   pendingIds: Set<string>;
 }
 
+interface GroupedRow {
+  project: DisplayProject;
+  isChild: boolean;
+  childCount: number;
+}
+
 /**
  * Τοποθετεί κάθε project με parent (π.χ. τα mini-games του gamehub) αμέσως
  * μετά τη γραμμή του γονέα του, ώστε να φαίνονται σαν υποκατηγορίες στον
  * πίνακα. Αν ο γονέας δεν είναι στη λίστα (π.χ. φιλτραρίστηκε), το project
- * εμφανίζεται στην κανονική του θέση χωρίς εσοχή.
+ * εμφανίζεται στην κανονική του θέση χωρίς εσοχή. Τα παιδιά ενός γονέα που
+ * δεν είναι στο `expanded` παραλείπονται εντελώς.
  */
 function withGroups(
   projects: DisplayProject[],
-  groups: Record<string, string>
-): { project: DisplayProject; isChild: boolean }[] {
+  groups: Record<string, string>,
+  expanded: Set<string>
+): GroupedRow[] {
   const idsInList = new Set(projects.map((p) => p.id));
   const childrenByParent = new Map<string, DisplayProject[]>();
   const nestedChildIds = new Set<string>();
@@ -108,12 +119,15 @@ function withGroups(
     }
   }
 
-  const result: { project: DisplayProject; isChild: boolean }[] = [];
+  const result: GroupedRow[] = [];
   for (const p of projects) {
     if (nestedChildIds.has(p.id)) continue;
-    result.push({ project: p, isChild: false });
-    for (const child of childrenByParent.get(p.id) ?? []) {
-      result.push({ project: child, isChild: true });
+    const children = childrenByParent.get(p.id) ?? [];
+    result.push({ project: p, isChild: false, childCount: children.length });
+    if (children.length > 0 && expanded.has(p.id)) {
+      for (const child of children) {
+        result.push({ project: child, isChild: true, childCount: 0 });
+      }
     }
   }
   return result;
@@ -127,6 +141,8 @@ export function ProjectsTable({
   onReminderChanged,
   pendingIds,
 }: ProjectsTableProps) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
   if (projects.length === 0) {
     return (
       <p className="text-center text-muted-foreground py-16">
@@ -135,7 +151,19 @@ export function ProjectsTable({
     );
   }
 
-  const rows = withGroups(projects, groups);
+  function toggleExpanded(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  const rows = withGroups(projects, groups, expanded);
 
   return (
     <Table>
@@ -151,18 +179,39 @@ export function ProjectsTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map(({ project, isChild }) => (
+        {rows.map(({ project, isChild, childCount }) => (
           <TableRow
             key={project.id}
             className={!project.enabled ? "opacity-50" : undefined}
           >
             <TableCell className="font-medium">
-              <span className={isChild ? "inline-flex items-center gap-1.5 pl-4" : undefined}>
+              <span className={isChild ? "inline-flex items-center gap-1.5 pl-4" : "inline-flex items-center gap-1.5"}>
                 {isChild && (
                   <CornerDownRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 )}
+                {childCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(project.id)}
+                    className="inline-flex items-center justify-center w-4 h-4 rounded border border-input text-muted-foreground hover:bg-muted shrink-0"
+                    aria-label={
+                      expanded.has(project.id)
+                        ? `Σύμπτυξη υποκατηγοριών ${project.name}`
+                        : `Ανάπτυξη υποκατηγοριών ${project.name}`
+                    }
+                  >
+                    {expanded.has(project.id) ? (
+                      <Minus className="w-2.5 h-2.5" />
+                    ) : (
+                      <Plus className="w-2.5 h-2.5" />
+                    )}
+                  </button>
+                )}
                 {project.name}
               </span>
+              {childCount > 0 && (
+                <span className="ml-1.5 text-xs text-muted-foreground">({childCount})</span>
+              )}
               {project.manual && (
                 <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1.5">
                   manual
