@@ -44,3 +44,8 @@ next-env.d.ts
 
 # claude code
 .claude/
+
+.env*
+
+# local verification scripts + screenshots
+.verify/

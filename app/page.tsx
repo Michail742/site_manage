@@ -5,10 +5,18 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MetricCards } from "@/components/metric-cards";
 import { ProjectsView } from "@/components/projects-view";
 import { getProjects, toDisplayProject } from "@/lib/vercel";
+import { getReminders } from "@/lib/reminders";
+import { getManualProjects } from "@/lib/manual-projects";
+import { getProjectGroups } from "@/lib/project-groups";
 import { Layers } from "lucide-react";
 
 async function DashboardContent() {
-  const allProjects = await getProjects();
+  const [allProjects, reminders, manualProjects, groups] = await Promise.all([
+    getProjects(),
+    getReminders(),
+    getManualProjects(),
+    getProjectGroups(),
+  ]);
   const vercelProjects = allProjects
     .filter((p) => p.id !== process.env.VERCEL_PROJECT_ID)
     .map(toDisplayProject);
@@ -20,7 +28,12 @@ async function DashboardContent() {
   return (
     <div className="space-y-6">
       <MetricCards projects={rawProjects} />
-      <ProjectsView vercelProjects={vercelProjects} />
+      <ProjectsView
+        vercelProjects={vercelProjects}
+        manualProjects={manualProjects}
+        reminders={reminders}
+        groups={groups}
+      />
     </div>
   );
 }
@@ -28,8 +41,8 @@ async function DashboardContent() {
 function DashboardSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="h-28 bg-muted animate-pulse rounded-xl" />
         ))}
       </div>
