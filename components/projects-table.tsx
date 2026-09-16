@@ -88,18 +88,28 @@ interface ProjectsTableProps {
   pendingIds: Set<string>;
 }
 
+// Κατηγορίες που δεν αντιστοιχούν σε πραγματικό project — απλώς μαζεύουν
+// άλλα projects από κάτω τους στον πίνακα (id -> τίτλος).
+const VIRTUAL_GROUPS: Record<string, string> = {
+  virtual_personal: "Προσωπικά projects",
+};
+
 interface GroupedRow {
-  project: DisplayProject;
-  isChild: boolean;
+  id: string;
+  name: string;
+  project: DisplayProject | null;
+  depth: number;
   childCount: number;
 }
 
 /**
- * Τοποθετεί κάθε project με parent (π.χ. τα mini-games του gamehub) αμέσως
- * μετά τη γραμμή του γονέα του, ώστε να φαίνονται σαν υποκατηγορίες στον
- * πίνακα. Αν ο γονέας δεν είναι στη λίστα (π.χ. φιλτραρίστηκε), το project
- * εμφανίζεται στην κανονική του θέση χωρίς εσοχή. Τα παιδιά ενός γονέα που
- * δεν είναι στο `expanded` παραλείπονται εντελώς.
+ * Χτίζει το δέντρο των projects με βάση το `groups` (child id -> parent id),
+ * που μπορεί να δείχνει είτε σε πραγματικό project (π.χ. τα mini-games κάτω
+ * από το gamehub) είτε σε ψευδο-κατηγορία από το VIRTUAL_GROUPS (π.χ.
+ * "Προσωπικά projects"). Ο γονέας κάθε κλαδιού εμφανίζεται πρώτος και τα
+ * παιδιά ενός γονέα που δεν είναι στο `expanded` παραλείπονται εντελώς. Αν
+ * ο γονέας ενός project δεν υπάρχει στη λίστα (π.χ. φιλτραρίστηκε), το
+ * project εμφανίζεται στην κανονική του θέση χωρίς εσοχή.
  */
 function withGroups(
   projects: DisplayProject[],
@@ -108,30 +118,47 @@ function withGroups(
 ): GroupedRow[] {
   const idsInList = new Set(projects.map((p) => p.id));
   const childrenByParent = new Map<string, DisplayProject[]>();
-  const nestedChildIds = new Set<string>();
+  const nestedIds = new Set<string>();
 
   for (const p of projects) {
     const parentId = groups[p.id];
-    if (parentId && idsInList.has(parentId) && parentId !== p.id) {
-      if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, []);
-      childrenByParent.get(parentId)!.push(p);
-      nestedChildIds.add(p.id);
+    if (!parentId || parentId === p.id) continue;
+    if (!idsInList.has(parentId) && !(parentId in VIRTUAL_GROUPS)) continue;
+    if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, []);
+    childrenByParent.get(parentId)!.push(p);
+    nestedIds.add(p.id);
+  }
+
+  function emitSubtree(
+    id: string,
+    name: string,
+    project: DisplayProject | null,
+    depth: number
+  ): GroupedRow[] {
+    const children = childrenByParent.get(id) ?? [];
+    const rows: GroupedRow[] = [{ id, name, project, depth, childCount: children.length }];
+    if (children.length > 0 && expanded.has(id)) {
+      for (const child of children) {
+        rows.push(...emitSubtree(child.id, child.name, child, depth + 1));
+      }
     }
+    return rows;
   }
 
   const result: GroupedRow[] = [];
   for (const p of projects) {
-    if (nestedChildIds.has(p.id)) continue;
-    const children = childrenByParent.get(p.id) ?? [];
-    result.push({ project: p, isChild: false, childCount: children.length });
-    if (children.length > 0 && expanded.has(p.id)) {
-      for (const child of children) {
-        result.push({ project: child, isChild: true, childCount: 0 });
-      }
+    if (nestedIds.has(p.id)) continue;
+    result.push(...emitSubtree(p.id, p.name, p, 0));
+  }
+  for (const [virtualId, virtualName] of Object.entries(VIRTUAL_GROUPS)) {
+    if (childrenByParent.has(virtualId)) {
+      result.push(...emitSubtree(virtualId, virtualName, null, 0));
     }
   }
   return result;
 }
+
+const INDENT_CLASS = ["", "pl-4", "pl-8", "pl-12"];
 
 export function ProjectsTable({
   projects,
@@ -179,97 +206,116 @@ export function ProjectsTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map(({ project, isChild, childCount }) => (
-          <TableRow
-            key={project.id}
-            className={!project.enabled ? "opacity-50" : undefined}
-          >
+        {rows.map(({ id, name, project, depth, childCount }) => {
+          const nameCell = (
             <TableCell className="font-medium">
-              <span className={isChild ? "inline-flex items-center gap-1.5 pl-4" : "inline-flex items-center gap-1.5"}>
-                {isChild && (
+              <span
+                className={`inline-flex items-center gap-1.5 ${INDENT_CLASS[Math.min(depth, INDENT_CLASS.length - 1)]}`}
+              >
+                {depth > 0 && (
                   <CornerDownRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 )}
                 {childCount > 0 && (
                   <button
                     type="button"
-                    onClick={() => toggleExpanded(project.id)}
+                    onClick={() => toggleExpanded(id)}
                     className="inline-flex items-center justify-center w-4 h-4 rounded border border-input text-muted-foreground hover:bg-muted shrink-0"
                     aria-label={
-                      expanded.has(project.id)
-                        ? `Σύμπτυξη υποκατηγοριών ${project.name}`
-                        : `Ανάπτυξη υποκατηγοριών ${project.name}`
+                      expanded.has(id)
+                        ? `Σύμπτυξη υποκατηγοριών ${name}`
+                        : `Ανάπτυξη υποκατηγοριών ${name}`
                     }
                   >
-                    {expanded.has(project.id) ? (
+                    {expanded.has(id) ? (
                       <Minus className="w-2.5 h-2.5" />
                     ) : (
                       <Plus className="w-2.5 h-2.5" />
                     )}
                   </button>
                 )}
-                {project.name}
+                {name}
               </span>
               {childCount > 0 && (
                 <span className="ml-1.5 text-xs text-muted-foreground">({childCount})</span>
               )}
-              {project.manual && (
+              {project?.manual && (
                 <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1.5">
                   manual
                 </Badge>
               )}
             </TableCell>
-            <TableCell className="text-muted-foreground capitalize">
-              {project.framework ?? "—"}
-            </TableCell>
-            <TableCell>
-              {project.status ? (
-                <StatusBadge state={project.status} />
-              ) : (
-                <span className="text-muted-foreground text-sm">No deployments</span>
-              )}
-            </TableCell>
-            <TableCell className="text-muted-foreground text-sm">
-              {project.deployedAt ? formatDate(project.deployedAt) : "—"}
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center gap-1">
-                {reminders[project.id] ? (
-                  <RenewalCell reminder={reminders[project.id]} />
+          );
+
+          if (!project) {
+            // Ψευδο-κατηγορία (π.χ. "Προσωπικά projects") — δεν αντιστοιχεί σε
+            // πραγματικό project, οπότε δεν έχει framework/status/URL/on-off.
+            return (
+              <TableRow key={id}>
+                {nameCell}
+                <TableCell colSpan={6} />
+              </TableRow>
+            );
+          }
+
+          return (
+            <TableRow
+              key={id}
+              className={!project.enabled ? "opacity-50" : undefined}
+            >
+              {nameCell}
+              <TableCell className="text-muted-foreground capitalize">
+                {project.framework ?? "—"}
+              </TableCell>
+              <TableCell>
+                {project.status ? (
+                  <StatusBadge state={project.status} />
+                ) : (
+                  <span className="text-muted-foreground text-sm">No deployments</span>
+                )}
+              </TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {project.deployedAt ? formatDate(project.deployedAt) : "—"}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1">
+                  {reminders[project.id] ? (
+                    <RenewalCell reminder={reminders[project.id]} />
+                  ) : (
+                    <span className="text-muted-foreground text-sm">—</span>
+                  )}
+                  <ReminderDialog
+                    project={project}
+                    reminder={reminders[project.id] ?? null}
+                    onChanged={onReminderChanged}
+                  />
+                </div>
+              </TableCell>
+              <TableCell className="text-right">
+                {project.url ? (
+                  <a
+                    href={project.url.startsWith("http") ? project.url : `https://${project.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                  >
+                    {project.url.replace(/^https?:\/\//, "").split(".")[0]}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
                 ) : (
                   <span className="text-muted-foreground text-sm">—</span>
                 )}
-                <ReminderDialog
-                  project={project}
-                  reminder={reminders[project.id] ?? null}
-                  onChanged={onReminderChanged}
+              </TableCell>
+              <TableCell className="text-right">
+                <Switch
+                  checked={project.enabled}
+                  disabled={pendingIds.has(project.id)}
+                  onCheckedChange={(checked) => onToggle(project, checked)}
+                  aria-label={`${project.enabled ? "Απενεργοποίηση" : "Ενεργοποίηση"} ${project.name}`}
                 />
-              </div>
-            </TableCell>
-            <TableCell className="text-right">
-              {project.url ? (
-                <a
-                  href={project.url.startsWith("http") ? project.url : `https://${project.url}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                >
-                  {project.url.replace(/^https?:\/\//, "").split(".")[0]}
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              ) : (
-                <span className="text-muted-foreground text-sm">—</span>
-              )}
-            </TableCell>
-            <TableCell className="text-right">
-              <Switch
-                checked={project.enabled}
-                disabled={pendingIds.has(project.id)}
-                onCheckedChange={(checked) => onToggle(project, checked)}
-                aria-label={`${project.enabled ? "Απενεργοποίηση" : "Ενεργοποίηση"} ${project.name}`}
-              />
-            </TableCell>
-          </TableRow>
-        ))}
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );

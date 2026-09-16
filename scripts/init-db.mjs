@@ -90,6 +90,21 @@ await sql`
   ON CONFLICT (child_id) DO NOTHING
 `;
 
+// Όλα τα υπόλοιπα (εκτός anyweather, που έχει ήδη τη δική του ομάδα) είναι
+// προσωπικά projects — μαζεύονται κάτω από ένα ψευδο-project χωρίς δική του
+// γραμμή στο manual_projects/Vercel (βλ. VIRTUAL_GROUPS στο projects-table.tsx).
+await sql`
+  INSERT INTO project_groups (child_id, parent_id) VALUES
+    ('prj_ygAw0ewKBFL9naAQBdHZmoOwVJXi', 'virtual_personal'),
+    ('prj_mAhPlaeEZV1k0c6vz3kk1sde2Rj6', 'virtual_personal'),
+    ('prj_dfAhv4UlBwFjFmObsV3OxGxgnLH1', 'virtual_personal'),
+    ('prj_QI3invNex4N2P88lar8BVTerCJIM', 'virtual_personal'),
+    ('prj_a13PshSU7sX9MqlNm4U8iy0qMxcQ', 'virtual_personal'),
+    ('prj_r2uzDsDxYHtSS3cWVwsRG38nXO0K', 'virtual_personal'),
+    ('prj_VGv4ATAV5hp0jFOBA2XzmHXdQ0bZ', 'virtual_personal')
+  ON CONFLICT (child_id) DO NOTHING
+`;
+
 const [{ count: reminderCount }] = await sql`SELECT count(*)::int AS count FROM project_reminders`;
 const [{ count: manualCount }] = await sql`SELECT count(*)::int AS count FROM manual_projects`;
 const [{ count: groupCount }] = await sql`SELECT count(*)::int AS count FROM project_groups`;
