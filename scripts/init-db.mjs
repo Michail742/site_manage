@@ -51,6 +51,26 @@ await sql`
   ON CONFLICT (id) DO NOTHING
 `;
 
+await sql`
+  CREATE TABLE IF NOT EXISTS project_groups (
+    child_id   TEXT PRIMARY KEY,
+    parent_id  TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )
+`;
+
+// onomazooprama / tictactoe / crossword είναι mini-games που ζουν κάτω από
+// το gamehub — εμφανίζονται φωλιασμένα στο dashboard αντί για ξεχωριστές
+// γραμμές στο top level.
+await sql`
+  INSERT INTO project_groups (child_id, parent_id) VALUES
+    ('prj_KfaSo73u9D4BFPhwZR55lJwIV272', 'prj_mAhPlaeEZV1k0c6vz3kk1sde2Rj6'),
+    ('prj_tkJb0Zmovv3XF0cbDODNfXOKydiD', 'prj_mAhPlaeEZV1k0c6vz3kk1sde2Rj6'),
+    ('prj_0lC0KvUF1QO5gcreGsJzCo447iCN', 'prj_mAhPlaeEZV1k0c6vz3kk1sde2Rj6')
+  ON CONFLICT (child_id) DO NOTHING
+`;
+
 const [{ count: reminderCount }] = await sql`SELECT count(*)::int AS count FROM project_reminders`;
 const [{ count: manualCount }] = await sql`SELECT count(*)::int AS count FROM manual_projects`;
-console.log(`✓ schema έτοιμο — ${reminderCount} reminders, ${manualCount} manual projects`);
+const [{ count: groupCount }] = await sql`SELECT count(*)::int AS count FROM project_groups`;
+console.log(`✓ schema έτοιμο — ${reminderCount} reminders, ${manualCount} manual projects, ${groupCount} groups`);

@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, CornerDownRight } from "lucide-react";
 import { type DeploymentState } from "@/lib/vercel";
 import { type DisplayProject } from "@/lib/types";
 import { type ReminderView, reminderStatus } from "@/lib/reminders";
@@ -79,14 +79,50 @@ function RenewalCell({ reminder }: { reminder: ReminderView }) {
 interface ProjectsTableProps {
   projects: DisplayProject[];
   reminders: Record<string, ReminderView>;
+  groups: Record<string, string>;
   onToggle: (project: DisplayProject, enabled: boolean) => void;
   onReminderChanged: () => void;
   pendingIds: Set<string>;
 }
 
+/**
+ * Τοποθετεί κάθε project με parent (π.χ. τα mini-games του gamehub) αμέσως
+ * μετά τη γραμμή του γονέα του, ώστε να φαίνονται σαν υποκατηγορίες στον
+ * πίνακα. Αν ο γονέας δεν είναι στη λίστα (π.χ. φιλτραρίστηκε), το project
+ * εμφανίζεται στην κανονική του θέση χωρίς εσοχή.
+ */
+function withGroups(
+  projects: DisplayProject[],
+  groups: Record<string, string>
+): { project: DisplayProject; isChild: boolean }[] {
+  const idsInList = new Set(projects.map((p) => p.id));
+  const childrenByParent = new Map<string, DisplayProject[]>();
+  const nestedChildIds = new Set<string>();
+
+  for (const p of projects) {
+    const parentId = groups[p.id];
+    if (parentId && idsInList.has(parentId) && parentId !== p.id) {
+      if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, []);
+      childrenByParent.get(parentId)!.push(p);
+      nestedChildIds.add(p.id);
+    }
+  }
+
+  const result: { project: DisplayProject; isChild: boolean }[] = [];
+  for (const p of projects) {
+    if (nestedChildIds.has(p.id)) continue;
+    result.push({ project: p, isChild: false });
+    for (const child of childrenByParent.get(p.id) ?? []) {
+      result.push({ project: child, isChild: true });
+    }
+  }
+  return result;
+}
+
 export function ProjectsTable({
   projects,
   reminders,
+  groups,
   onToggle,
   onReminderChanged,
   pendingIds,
@@ -98,6 +134,8 @@ export function ProjectsTable({
       </p>
     );
   }
+
+  const rows = withGroups(projects, groups);
 
   return (
     <Table>
@@ -113,13 +151,18 @@ export function ProjectsTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {projects.map((project) => (
+        {rows.map(({ project, isChild }) => (
           <TableRow
             key={project.id}
             className={!project.enabled ? "opacity-50" : undefined}
           >
             <TableCell className="font-medium">
-              <span>{project.name}</span>
+              <span className={isChild ? "inline-flex items-center gap-1.5 pl-4" : undefined}>
+                {isChild && (
+                  <CornerDownRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                )}
+                {project.name}
+              </span>
               {project.manual && (
                 <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1.5">
                   manual

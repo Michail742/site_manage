@@ -27,9 +27,15 @@ interface ProjectsViewProps {
   vercelProjects: DisplayProject[];
   manualProjects: ManualProject[];
   reminders: Record<string, ReminderView>;
+  groups: Record<string, string>;
 }
 
-export function ProjectsView({ vercelProjects, manualProjects, reminders }: ProjectsViewProps) {
+export function ProjectsView({
+  vercelProjects,
+  manualProjects,
+  reminders,
+  groups,
+}: ProjectsViewProps) {
   const router = useRouter();
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState(false);
@@ -144,6 +150,7 @@ export function ProjectsView({ vercelProjects, manualProjects, reminders }: Proj
         <ProjectsTable
           projects={filtered}
           reminders={reminders}
+          groups={groups}
           onToggle={handleToggle}
           onReminderChanged={() => router.refresh()}
           pendingIds={pendingIds}

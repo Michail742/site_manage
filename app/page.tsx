@@ -7,13 +7,15 @@ import { ProjectsView } from "@/components/projects-view";
 import { getProjects, toDisplayProject } from "@/lib/vercel";
 import { getReminders } from "@/lib/reminders";
 import { getManualProjects } from "@/lib/manual-projects";
+import { getProjectGroups } from "@/lib/project-groups";
 import { Layers } from "lucide-react";
 
 async function DashboardContent() {
-  const [allProjects, reminders, manualProjects] = await Promise.all([
+  const [allProjects, reminders, manualProjects, groups] = await Promise.all([
     getProjects(),
     getReminders(),
     getManualProjects(),
+    getProjectGroups(),
   ]);
   const vercelProjects = allProjects
     .filter((p) => p.id !== process.env.VERCEL_PROJECT_ID)
@@ -30,6 +32,7 @@ async function DashboardContent() {
         vercelProjects={vercelProjects}
         manualProjects={manualProjects}
         reminders={reminders}
+        groups={groups}
       />
     </div>
   );
