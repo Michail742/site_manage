@@ -126,6 +126,19 @@ await sql`
   )
 `;
 
+// Passkeys (βιομετρικά) του μοναδικού admin — ένα ανά συσκευή. Βλ. app/auth-actions.ts.
+await sql`
+  CREATE TABLE IF NOT EXISTS passkeys (
+    id            TEXT PRIMARY KEY,
+    public_key    TEXT NOT NULL,
+    counter       BIGINT NOT NULL DEFAULT 0,
+    transports    TEXT[],
+    label         TEXT,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_used_at  TIMESTAMPTZ
+  )
+`;
+
 const [{ count: reminderCount }] = await sql`SELECT count(*)::int AS count FROM project_reminders`;
 const [{ count: manualCount }] = await sql`SELECT count(*)::int AS count FROM manual_projects`;
 const [{ count: groupCount }] = await sql`SELECT count(*)::int AS count FROM project_groups`;

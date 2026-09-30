@@ -1,6 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { SESSION_COOKIE, isValidSession } from "@/lib/session";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { MetricCards } from "@/components/metric-cards";
 import { ProjectsView } from "@/components/projects-view";
@@ -13,8 +16,10 @@ import { getProjectMeta } from "@/lib/project-meta";
 import { getDomainExpiries } from "@/lib/domains";
 import { manualToDisplay, withMeta } from "@/lib/types";
 import { Layers } from "lucide-react";
+import { AccountActions } from "@/components/account-actions";
 
 async function DashboardContent() {
+  if (!(await isValidSession((await cookies()).get(SESSION_COOKIE)?.value))) redirect("/login");
   const [allProjects, cloudflareResult, reminders, manualProjects, groups, meta] =
     await Promise.all([
       getProjects(),
@@ -100,6 +105,7 @@ export default function OverviewPage() {
             <h1 className="text-2xl font-semibold tracking-tight">Admin Dashboard</h1>
             <p className="text-sm text-muted-foreground">Overview των web projects σου</p>
           </div>
+          <AccountActions />
         </header>
 
         <Suspense fallback={<DashboardSkeleton />}>

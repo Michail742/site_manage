@@ -1,6 +1,7 @@
 "use server";
 
 import { updateTag } from "next/cache";
+import { requireSession } from "@/app/auth-actions";
 import { setProjectPaused } from "@/lib/vercel";
 import {
   upsertReminder,
@@ -20,28 +21,34 @@ import {
 import { setDomainExpiry } from "@/lib/domains";
 
 export async function setProjectEnabled(projectId: string, enabled: boolean) {
+  await requireSession();
   await setProjectPaused(projectId, !enabled);
   updateTag("projects");
 }
 
 export async function addManualProject(input: ManualProjectInput) {
+  await requireSession();
   if (!input.name.trim()) throw new Error("Λείπει το όνομα του project");
   await addManualProjectDb(input);
 }
 
 export async function setManualProjectEnabled(projectId: string, enabled: boolean) {
+  await requireSession();
   await setManualProjectEnabledDb(projectId, enabled);
 }
 
 export async function scanProjects() {
+  await requireSession();
   updateTag("projects");
 }
 
 export async function saveProjectMeta(input: ProjectMetaInput) {
+  await requireSession();
   await setProjectMetaDb(input);
 }
 
 export async function saveDomainExpiry(domain: string, expiresOn: string | null) {
+  await requireSession();
   if (!domain) throw new Error("Λείπει το domain");
   if (expiresOn !== null && !/^\d{4}-\d{2}-\d{2}$/.test(expiresOn)) {
     throw new Error("Μη έγκυρη ημερομηνία λήξης");
@@ -50,6 +57,7 @@ export async function saveDomainExpiry(domain: string, expiresOn: string | null)
 }
 
 export async function saveReminder(input: ReminderInput) {
+  await requireSession();
   if (!input.projectId) throw new Error("Λείπει το project id");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.renewalDate)) {
     throw new Error("Μη έγκυρη ημερομηνία ανανέωσης");
@@ -58,10 +66,12 @@ export async function saveReminder(input: ReminderInput) {
 }
 
 export async function removeReminder(projectId: string) {
+  await requireSession();
   await deleteReminder(projectId);
 }
 
 /** Μετά την αποστολή του email: καταγραφή + μετάθεση ένα έτος μπροστά. */
 export async function confirmReminderSent(projectId: string) {
+  await requireSession();
   await markNotifiedAndRenew(projectId);
 }
