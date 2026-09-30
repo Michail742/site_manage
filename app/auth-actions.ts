@@ -109,10 +109,19 @@ interface PasskeyRow {
   transports: string[] | null;
 }
 
-export async function passkeyLoginOptions() {
+/** Με credentialId (συσκευή που έχει ήδη καταχωριστεί) το Android/iOS πάει
+ * κατευθείαν στο αποτύπωμα, χωρίς λίστα λογαριασμών. Χωρίς αυτό, η συσκευή
+ * ψάχνει μόνη της passkey — εφεδρικό για όταν έχει σβηστεί το localStorage. */
+export async function passkeyLoginOptions(credentialId?: string) {
   const { rpID } = await relyingParty();
-  // Χωρίς allowCredentials: η συσκευή προτείνει μόνη της το αποθηκευμένο passkey.
-  const options = await generateAuthenticationOptions({ rpID, userVerification: "required" });
+  const known = credentialId
+    ? ((await getSql()`SELECT id, transports FROM passkeys WHERE id = ${credentialId}`) as PasskeyRow[])
+    : [];
+  const options = await generateAuthenticationOptions({
+    rpID,
+    userVerification: "required",
+    allowCredentials: known.map((p) => ({ id: p.id, transports: p.transports ?? ["internal"] })),
+  });
   await saveChallenge(options.challenge);
   return options;
 }
@@ -161,6 +170,8 @@ export async function passkeyRegisterOptions() {
     attestationType: "none",
     excludeCredentials: existing.map((p) => ({ id: p.id, transports: p.transports ?? undefined })),
     authenticatorSelection: { residentKey: "required", userVerification: "required" },
+    // Αισθητήρας της ίδιας της συσκευής (αποτύπωμα/πρόσωπο), όχι QR ή USB κλειδί.
+    preferredAuthenticatorType: "localDevice",
   });
   await saveChallenge(options.challenge);
   return options;

@@ -97,7 +97,7 @@ export default function OverviewPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-10 space-y-8">
-        <header className="flex items-center gap-3">
+        <header className="flex flex-wrap items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
             <Layers className="w-6 h-6 text-primary" />
           </div>

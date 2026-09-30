@@ -29,3 +29,21 @@ export function customDomain(hosts: (string | null | undefined)[]): string | nul
   }
   return null;
 }
+
+// Το id του passkey αυτής της συσκευής — όταν υπάρχει, η σελίδα σύνδεσης δείχνει
+// το κουμπί αποτυπώματος και πάει κατευθείαν σε αυτό το κλειδί.
+export const PASSKEY_STORAGE_KEY = "sm_passkey_id";
+
+export function rememberPasskey(id: string) {
+  try {
+    localStorage.setItem(PASSKEY_STORAGE_KEY, id);
+  } catch {}
+}
+
+export function rememberedPasskey(): string | null {
+  try {
+    return localStorage.getItem(PASSKEY_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
