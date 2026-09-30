@@ -80,8 +80,8 @@ export default function LoginPage() {
             <>
               {passwordForm}
               <p className="text-xs text-center text-muted-foreground">
-                Μετά τη σύνδεση, πάτα «Ενεργοποίηση αποτυπώματος» για να μπαίνεις από αυτή τη
-                συσκευή χωρίς κωδικό.
+                Μετά τη σύνδεση, πάτα το κουμπί με το αποτύπωμα πάνω δεξιά για να μπαίνεις
+                από αυτή τη συσκευή χωρίς κωδικό.
               </p>
               <div className="space-y-2 text-center">
                 <button
