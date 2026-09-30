@@ -1,4 +1,5 @@
 import { type DeploymentState } from "@/lib/vercel";
+import { customDomain } from "@/lib/utils";
 
 export type ProjectSource = "vercel" | "cloudflare" | "manual";
 
@@ -12,6 +13,8 @@ export interface DisplayProject {
   status: DeploymentState | null;
   deployedAt: number | null;
   url: string | null;
+  /** Custom domain (apex) — null αν το project ζει μόνο σε *.vercel.app / *.pages.dev. */
+  domain: string | null;
   manual: boolean;
   enabled: boolean;
   source: ProjectSource;
@@ -38,6 +41,7 @@ export function manualToDisplay(p: ManualProject): DisplayProject {
     status: p.status,
     deployedAt: p.createdAt,
     url: p.url,
+    domain: customDomain([p.url]),
     manual: true,
     enabled: p.enabled,
     source: "manual",

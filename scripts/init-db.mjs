@@ -115,6 +115,17 @@ await sql`
   ON CONFLICT (id) DO UPDATE SET framework = EXCLUDED.framework
 `;
 
+// Χειροκίνητη λήξη domain, keyed by apex domain (όχι project — δύο projects
+// μπορεί να μοιράζονται το ίδιο domain, π.χ. anyweather + home.anyweather.gr).
+// Χρειάζεται μόνο όπου το RDAP δεν δίνει ημερομηνία (π.χ. .gr) — βλ. lib/domains.ts.
+await sql`
+  CREATE TABLE IF NOT EXISTS domain_expiries (
+    domain      TEXT PRIMARY KEY,
+    expires_on  DATE NOT NULL,
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  )
+`;
+
 const [{ count: reminderCount }] = await sql`SELECT count(*)::int AS count FROM project_reminders`;
 const [{ count: manualCount }] = await sql`SELECT count(*)::int AS count FROM manual_projects`;
 const [{ count: groupCount }] = await sql`SELECT count(*)::int AS count FROM project_groups`;

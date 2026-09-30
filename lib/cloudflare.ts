@@ -1,5 +1,6 @@
 import { type DisplayProject } from "@/lib/types";
 import { type DeploymentState } from "@/lib/vercel";
+import { customDomain } from "@/lib/utils";
 
 const CF_API = "https://api.cloudflare.com/client/v4";
 
@@ -136,6 +137,7 @@ export function toDisplayProject(p: CloudflarePagesProject): DisplayProject {
     status: latest ? mapStatus(latest.latest_stage?.status) : null,
     deployedAt: latest ? Date.parse(latest.created_on) || null : null,
     url,
+    domain: customDomain(p.domains ?? []),
     manual: false,
     enabled: true,
     source: "cloudflare",

@@ -17,6 +17,7 @@ import {
   setProjectMeta as setProjectMetaDb,
   type ProjectMetaInput,
 } from "@/lib/project-meta";
+import { setDomainExpiry } from "@/lib/domains";
 
 export async function setProjectEnabled(projectId: string, enabled: boolean) {
   await setProjectPaused(projectId, !enabled);
@@ -38,6 +39,14 @@ export async function scanProjects() {
 
 export async function saveProjectMeta(input: ProjectMetaInput) {
   await setProjectMetaDb(input);
+}
+
+export async function saveDomainExpiry(domain: string, expiresOn: string | null) {
+  if (!domain) throw new Error("Λείπει το domain");
+  if (expiresOn !== null && !/^\d{4}-\d{2}-\d{2}$/.test(expiresOn)) {
+    throw new Error("Μη έγκυρη ημερομηνία λήξης");
+  }
+  await setDomainExpiry(domain, expiresOn);
 }
 
 export async function saveReminder(input: ReminderInput) {

@@ -17,6 +17,8 @@ import { type DisplayProject } from "@/lib/types";
 import { type ReminderView, reminderStatus } from "@/lib/reminders";
 import { ReminderDialog } from "@/components/reminder-dialog";
 import { ProjectMetaDialog } from "@/components/project-meta-dialog";
+import { DomainExpiryDialog } from "@/components/domain-expiry-dialog";
+import { type DomainExpiry } from "@/lib/domains";
 
 const STATUS_MAP: Record<
   DeploymentState,
@@ -50,20 +52,29 @@ function formatDate(ms: number) {
   }).format(new Date(ms));
 }
 
-function RenewalCell({ reminder }: { reminder: ReminderView }) {
-  const status = reminderStatus(reminder.daysUntil);
-  const days = Math.abs(reminder.daysUntil);
+/** Ημερομηνία + "σε Χ μέρες" με χρώμα — κοινό για ανανέωση πελάτη και λήξη domain. */
+function DueCell({
+  date,
+  daysUntil,
+  suffix,
+}: {
+  date: string;
+  daysUntil: number;
+  suffix?: string;
+}) {
+  const status = reminderStatus(daysUntil);
+  const days = Math.abs(daysUntil);
 
   const label =
     status === "overdue"
       ? `Έληξε πριν ${days} ${days === 1 ? "μέρα" : "μέρες"}`
-      : reminder.daysUntil === 0
+      : daysUntil === 0
         ? "Λήγει σήμερα"
         : `Σε ${days} ${days === 1 ? "μέρα" : "μέρες"}`;
 
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-sm">{reminder.renewalDate}</span>
+      <span className="text-sm">{date}</span>
       <span
         className={
           status === "overdue"
@@ -74,7 +85,7 @@ function RenewalCell({ reminder }: { reminder: ReminderView }) {
         }
       >
         {label}
-        {reminder.amount !== null && ` · ${reminder.amount}€`}
+        {suffix}
       </span>
     </div>
   );
@@ -83,6 +94,7 @@ function RenewalCell({ reminder }: { reminder: ReminderView }) {
 interface ProjectsTableProps {
   projects: DisplayProject[];
   reminders: Record<string, ReminderView>;
+  domainExpiries: Record<string, DomainExpiry>;
   groups: Record<string, string>;
   onToggle: (project: DisplayProject, enabled: boolean) => void;
   onReminderChanged: () => void;
@@ -165,6 +177,7 @@ const INDENT_CLASS = ["", "pl-4", "pl-8", "pl-12"];
 export function ProjectsTable({
   projects,
   reminders,
+  domainExpiries,
   groups,
   onToggle,
   onReminderChanged,
@@ -205,6 +218,7 @@ export function ProjectsTable({
           <TableHead>Status</TableHead>
           <TableHead>Last Deploy</TableHead>
           <TableHead className="w-[190px]">Ανανέωση</TableHead>
+          <TableHead className="w-[170px]">Domain</TableHead>
           <TableHead className="text-right">URL</TableHead>
           <TableHead className="w-[80px] text-right">On/Off</TableHead>
         </TableRow>
@@ -261,7 +275,7 @@ export function ProjectsTable({
             return (
               <TableRow key={id}>
                 {nameCell}
-                <TableCell colSpan={7} />
+                <TableCell colSpan={8} />
               </TableRow>
             );
           }
@@ -294,7 +308,15 @@ export function ProjectsTable({
               <TableCell>
                 <div className="flex items-center gap-1">
                   {reminders[project.id] ? (
-                    <RenewalCell reminder={reminders[project.id]} />
+                    <DueCell
+                      date={reminders[project.id].renewalDate}
+                      daysUntil={reminders[project.id].daysUntil}
+                      suffix={
+                        reminders[project.id].amount !== null
+                          ? ` · ${reminders[project.id].amount}€`
+                          : undefined
+                      }
+                    />
                   ) : (
                     <span className="text-muted-foreground text-sm">—</span>
                   )}
@@ -304,6 +326,30 @@ export function ProjectsTable({
                     onChanged={onReminderChanged}
                   />
                 </div>
+              </TableCell>
+              <TableCell>
+                {project.domain ? (
+                  <div className="flex items-center gap-1">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-xs text-muted-foreground">{project.domain}</span>
+                      {domainExpiries[project.domain] ? (
+                        <DueCell
+                          date={domainExpiries[project.domain].expiresOn}
+                          daysUntil={domainExpiries[project.domain].daysUntil}
+                        />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Άγνωστη λήξη</span>
+                      )}
+                    </div>
+                    <DomainExpiryDialog
+                      domain={project.domain}
+                      expiry={domainExpiries[project.domain] ?? null}
+                      onChanged={onMetaChanged}
+                    />
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-sm">—</span>
+                )}
               </TableCell>
               <TableCell className="text-right">
                 {project.url ? (

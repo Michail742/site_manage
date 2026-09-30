@@ -17,6 +17,7 @@ import { type DisplayProject, type ManualProject, manualToDisplay, withMeta } fr
 import { type ManualProjectInput } from "@/lib/manual-projects";
 import { type ProjectMeta } from "@/lib/project-meta";
 import { type ReminderView, reminderStatus } from "@/lib/reminders";
+import { type DomainExpiry } from "@/lib/domains";
 import {
   setProjectEnabled,
   addManualProject,
@@ -30,6 +31,7 @@ interface ProjectsViewProps {
   manualProjects: ManualProject[];
   meta: Record<string, ProjectMeta>;
   reminders: Record<string, ReminderView>;
+  domainExpiries: Record<string, DomainExpiry>;
   groups: Record<string, string>;
 }
 
@@ -39,6 +41,7 @@ export function ProjectsView({
   manualProjects,
   meta,
   reminders,
+  domainExpiries,
   groups,
 }: ProjectsViewProps) {
   const router = useRouter();
@@ -171,6 +174,7 @@ export function ProjectsView({
         <ProjectsTable
           projects={filtered}
           reminders={reminders}
+          domainExpiries={domainExpiries}
           groups={groups}
           onToggle={handleToggle}
           onReminderChanged={() => router.refresh()}

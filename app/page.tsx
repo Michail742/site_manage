@@ -10,6 +10,7 @@ import { getReminders } from "@/lib/reminders";
 import { getManualProjects } from "@/lib/manual-projects";
 import { getProjectGroups } from "@/lib/project-groups";
 import { getProjectMeta } from "@/lib/project-meta";
+import { getDomainExpiries } from "@/lib/domains";
 import { manualToDisplay, withMeta } from "@/lib/types";
 import { Layers } from "lucide-react";
 
@@ -41,6 +42,12 @@ async function DashboardContent() {
     .filter((p) => !liveNames.has(p.name.toLowerCase()))
     .map((p) => withMeta(manualToDisplay(p), meta));
 
+  const domainExpiries = await getDomainExpiries(
+    [...vercelProjects, ...cloudflareProjects, ...manualDisplay]
+      .map((p) => p.domain)
+      .filter((d): d is string => d !== null)
+  );
+
   return (
     <div className="space-y-6">
       <MetricCards projects={[...vercelProjects, ...cloudflareProjects, ...manualDisplay]} />
@@ -50,6 +57,7 @@ async function DashboardContent() {
         manualProjects={manualProjects}
         meta={meta}
         reminders={reminders}
+        domainExpiries={domainExpiries}
         groups={groups}
       />
     </div>
@@ -83,7 +91,7 @@ function DashboardSkeleton() {
 export default function OverviewPage() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+      <div className="max-w-7xl mx-auto px-6 py-10 space-y-8">
         <header className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
             <Layers className="w-6 h-6 text-primary" />

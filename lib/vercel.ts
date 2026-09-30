@@ -1,4 +1,5 @@
 import { type DisplayProject } from "@/lib/types";
+import { customDomain } from "@/lib/utils";
 
 const VERCEL_API = "https://api.vercel.com";
 
@@ -15,6 +16,7 @@ export interface VercelProject {
   framework: string | null;
   updatedAt: number;
   paused?: boolean;
+  targets?: { production?: { alias?: string[] } };
   latestDeployments: {
     uid: string;
     url: string;
@@ -90,6 +92,7 @@ export function toDisplayProject(p: VercelProject): DisplayProject {
     status: latest?.readyState ?? null,
     deployedAt: latest?.createdAt ?? null,
     url: latest?.url ?? null,
+    domain: customDomain(p.targets?.production?.alias ?? []),
     manual: false,
     enabled: !p.paused,
     source: "vercel",
