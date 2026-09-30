@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Fingerprint, Layers } from "lucide-react";
 import { loginWithPassword, passkeyLogin, passkeyLoginOptions } from "@/app/auth-actions";
-import { rememberPasskey, rememberedPasskey } from "@/lib/utils";
+import { markTabUnlocked, rememberPasskey, rememberedPasskey } from "@/lib/utils";
 
 const noSubscribe = () => () => {};
 
@@ -30,6 +30,7 @@ export default function LoginPage() {
         const err = await passkeyLogin(response);
         if (err) return setPkError(err);
         rememberPasskey(response.id);
+        markTabUnlocked();
         router.replace("/");
       } catch (e) {
         // Ακύρωση από τον χρήστη (NotAllowedError) δεν είναι λάθος να δείξουμε.
@@ -39,7 +40,7 @@ export default function LoginPage() {
   }
 
   const passwordForm = (
-    <form action={pwAction} className="space-y-3">
+    <form action={pwAction} onSubmit={markTabUnlocked} className="space-y-3">
       <div className="space-y-1.5">
         <Label htmlFor="password">Κωδικός</Label>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />

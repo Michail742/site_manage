@@ -17,6 +17,7 @@ import { getDomainExpiries } from "@/lib/domains";
 import { manualToDisplay, withMeta } from "@/lib/types";
 import { Layers } from "lucide-react";
 import { AccountActions } from "@/components/account-actions";
+import { TabLock } from "@/components/tab-lock";
 
 async function DashboardContent() {
   if (!(await isValidSession((await cookies()).get(SESSION_COOKIE)?.value))) redirect("/login");
@@ -95,6 +96,7 @@ function DashboardSkeleton() {
 
 export default function OverviewPage() {
   return (
+    <TabLock>
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-10 space-y-8">
         <header className="flex flex-wrap items-center gap-3">
@@ -113,5 +115,6 @@ export default function OverviewPage() {
         </Suspense>
       </div>
     </div>
+    </TabLock>
   );
 }

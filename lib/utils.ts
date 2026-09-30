@@ -47,3 +47,21 @@ export function rememberedPasskey(): string | null {
     return null;
   }
 }
+
+// Σημάδι "ξεκλείδωτη καρτέλα" — το sessionStorage σβήνει όταν κλείνει η
+// καρτέλα, οπότε κάθε νέα καρτέλα ζητά ξανά κωδικό/αποτύπωμα (βλ. TabLock).
+const TAB_UNLOCK_KEY = "sm_tab_unlocked";
+
+export function markTabUnlocked() {
+  try {
+    sessionStorage.setItem(TAB_UNLOCK_KEY, "1");
+  } catch {}
+}
+
+export function isTabUnlocked(): boolean {
+  try {
+    return sessionStorage.getItem(TAB_UNLOCK_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
