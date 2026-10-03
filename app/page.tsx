@@ -11,6 +11,8 @@ import { getProjects, toDisplayProject } from "@/lib/vercel";
 import { getPagesProjects, toDisplayProject as cfToDisplayProject } from "@/lib/cloudflare";
 import { getReminders } from "@/lib/reminders";
 import { getManualProjects } from "@/lib/manual-projects";
+import { getKeziahCredit } from "@/lib/keziah-credit";
+import { KeziahCreditCard } from "@/components/keziah-credit-card";
 import { getProjectGroups } from "@/lib/project-groups";
 import { getProjectMeta } from "@/lib/project-meta";
 import { getDomainExpiries } from "@/lib/domains";
@@ -21,7 +23,7 @@ import { TabLock } from "@/components/tab-lock";
 
 async function DashboardContent() {
   if (!(await isValidSession((await cookies()).get(SESSION_COOKIE)?.value))) redirect("/login");
-  const [allProjects, cloudflareResult, reminders, manualProjects, groups, meta] =
+  const [allProjects, cloudflareResult, reminders, manualProjects, groups, meta, keziahCredit] =
     await Promise.all([
       getProjects(),
       getPagesProjects().catch((err) => {
@@ -32,6 +34,10 @@ async function DashboardContent() {
       getManualProjects(),
       getProjectGroups(),
       getProjectMeta(),
+      getKeziahCredit().catch((err) => {
+        console.error("Keziah credit failed:", err);
+        return { error: "Δεν φορτώθηκε το υπόλοιπο" };
+      }),
     ]);
   const vercelProjects = allProjects
     .filter((p) => p.id !== process.env.VERCEL_PROJECT_ID)
@@ -58,6 +64,7 @@ async function DashboardContent() {
     <div className="space-y-6">
       <MetricCards projects={[...vercelProjects, ...cloudflareProjects, ...manualDisplay]} />
       <ProjectsView
+        keziahCard={<KeziahCreditCard credit={keziahCredit} />}
         vercelProjects={vercelProjects}
         cloudflareProjects={cloudflareProjects}
         manualProjects={manualProjects}

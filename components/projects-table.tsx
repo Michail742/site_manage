@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import {
   Table,
   TableBody,
@@ -96,6 +96,7 @@ interface ProjectsTableProps {
   reminders: Record<string, ReminderView>;
   domainExpiries: Record<string, DomainExpiry>;
   groups: Record<string, string>;
+  keziahCard?: React.ReactNode;
   onToggle: (project: DisplayProject, enabled: boolean) => void;
   onReminderChanged: () => void;
   onMetaChanged: () => void;
@@ -187,6 +188,7 @@ export function ProjectsTable({
   reminders,
   domainExpiries,
   groups,
+  keziahCard,
   onToggle,
   onReminderChanged,
   onMetaChanged,
@@ -215,6 +217,8 @@ export function ProjectsTable({
   }
 
   const rows = withGroups(projects, groups, expanded);
+  const CREDIT_KEY = "credit:keziah";
+  const hasCredit = (name: string) => Boolean(keziahCard) && name.toLowerCase() === "keziah";
 
   return (
     <Table>
@@ -268,6 +272,21 @@ export function ProjectsTable({
                   />
                 )}
                 {name}
+                {hasCredit(name) && (
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(CREDIT_KEY)}
+                    className="inline-flex items-center gap-1 rounded border border-input px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+                    aria-label="Υπόλοιπο Anthropic"
+                  >
+                    {expanded.has(CREDIT_KEY) ? (
+                      <Minus className="w-2.5 h-2.5" />
+                    ) : (
+                      <Plus className="w-2.5 h-2.5" />
+                    )}
+                    Anthropic
+                  </button>
+                )}
               </span>
               {childCount > 0 && (
                 <span className="ml-1.5 text-xs text-muted-foreground">({childCount})</span>
@@ -297,10 +316,8 @@ export function ProjectsTable({
           }
 
           return (
-            <TableRow
-              key={id}
-              className={!project.enabled ? "opacity-50" : undefined}
-            >
+            <Fragment key={id}>
+            <TableRow className={!project.enabled ? "opacity-50" : undefined}>
               {nameCell}
               <TableCell className="text-muted-foreground">
                 <div className="flex items-center gap-1">
@@ -397,6 +414,12 @@ export function ProjectsTable({
                 )}
               </TableCell>
             </TableRow>
+            {hasCredit(name) && expanded.has(CREDIT_KEY) && (
+              <TableRow>
+                <TableCell colSpan={9}>{keziahCard}</TableCell>
+              </TableRow>
+            )}
+            </Fragment>
           );
         })}
       </TableBody>

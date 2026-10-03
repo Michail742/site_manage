@@ -139,6 +139,16 @@ await sql`
   )
 `;
 
+// Υπόλοιπο credits υπηρεσιών τρίτων που πληρώνει ο admin (π.χ. Anthropic για το keziah).
+// Δηλώνεται από το dashboard· το κόστος από τότε έρχεται από το keziah (lib/keziah-credit.ts).
+await sql`
+  CREATE TABLE IF NOT EXISTS service_credits (
+    service      TEXT PRIMARY KEY,
+    balance_usd  NUMERIC(10, 2) NOT NULL,
+    since        TIMESTAMPTZ NOT NULL DEFAULT now()
+  )
+`;
+
 const [{ count: reminderCount }] = await sql`SELECT count(*)::int AS count FROM project_reminders`;
 const [{ count: manualCount }] = await sql`SELECT count(*)::int AS count FROM manual_projects`;
 const [{ count: groupCount }] = await sql`SELECT count(*)::int AS count FROM project_groups`;

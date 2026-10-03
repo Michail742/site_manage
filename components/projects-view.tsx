@@ -33,9 +33,11 @@ interface ProjectsViewProps {
   reminders: Record<string, ReminderView>;
   domainExpiries: Record<string, DomainExpiry>;
   groups: Record<string, string>;
+  keziahCard?: React.ReactNode;
 }
 
 export function ProjectsView({
+  keziahCard,
   vercelProjects,
   cloudflareProjects,
   manualProjects,
@@ -176,6 +178,7 @@ export function ProjectsView({
           reminders={reminders}
           domainExpiries={domainExpiries}
           groups={groups}
+          keziahCard={keziahCard}
           onToggle={handleToggle}
           onReminderChanged={() => router.refresh()}
           onMetaChanged={() => router.refresh()}

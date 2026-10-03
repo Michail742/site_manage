@@ -19,6 +19,7 @@ import {
   type ProjectMetaInput,
 } from "@/lib/project-meta";
 import { setDomainExpiry } from "@/lib/domains";
+import { setKeziahBalance } from "@/lib/keziah-credit";
 
 export async function setProjectEnabled(projectId: string, enabled: boolean) {
   await requireSession();
@@ -68,6 +69,12 @@ export async function saveReminder(input: ReminderInput) {
 export async function removeReminder(projectId: string) {
   await requireSession();
   await deleteReminder(projectId);
+}
+
+export async function saveKeziahBalance(balanceUsd: number) {
+  await requireSession();
+  if (!Number.isFinite(balanceUsd) || balanceUsd < 0) throw new Error("Μη έγκυρο υπόλοιπο");
+  await setKeziahBalance(balanceUsd);
 }
 
 /** Μετά την αποστολή του email: καταγραφή + μετάθεση ένα έτος μπροστά. */
