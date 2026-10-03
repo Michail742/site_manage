@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { StatsCard } from "@/components/ui/stats-card";
 import { Globe, Activity, RefreshCw } from "lucide-react";
 import { type DisplayProject } from "@/lib/types";
 
@@ -64,24 +64,14 @@ export function MetricCards({ projects }: MetricCardsProps) {
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
       {cards.map(({ label, value, sub, icon: Icon, iconColor, iconBg }) => (
-        <Card key={label} className="relative overflow-hidden">
-          <CardContent className="pt-5 pb-5">
-            <div className="flex items-start justify-between gap-2">
-              <div className="space-y-1 min-w-0">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">
-                  {label}
-                </p>
-                <p className="text-2xl font-bold tracking-tight">
-                  {value}
-                </p>
-                <p className="text-xs text-muted-foreground leading-snug">{sub}</p>
-              </div>
-              <div className={`shrink-0 rounded-lg p-2 ${iconBg}`}>
-                <Icon className={`w-4 h-4 ${iconColor}`} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          key={label}
+          title={label}
+          value={value}
+          sub={sub}
+          icon={<Icon className={`w-4 h-4 ${iconColor}`} />}
+          iconClassName={iconBg}
+        />
       ))}
     </div>
   );

@@ -20,6 +20,7 @@ import { manualToDisplay, withMeta } from "@/lib/types";
 import { Layers } from "lucide-react";
 import { AccountActions } from "@/components/account-actions";
 import { TabLock } from "@/components/tab-lock";
+import { SimpleNavbar } from "@/components/ui/core-header-navbar";
 
 async function DashboardContent() {
   if (!(await isValidSession((await cookies()).get(SESSION_COOKIE)?.value))) redirect("/login");
@@ -106,16 +107,13 @@ export default function OverviewPage() {
     <TabLock>
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-10 space-y-8">
-        <header className="flex flex-wrap items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Layers className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Admin Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Overview των web projects σου</p>
-          </div>
+        <SimpleNavbar
+          icon={<Layers className="w-6 h-6 text-primary" />}
+          title="Admin Dashboard"
+          subtitle="Overview των web projects σου"
+        >
           <AccountActions />
-        </header>
+        </SimpleNavbar>
 
         <Suspense fallback={<DashboardSkeleton />}>
           <DashboardContent />
