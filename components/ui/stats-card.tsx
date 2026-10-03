@@ -15,7 +15,12 @@ interface StatsCardProps {
 
 export function StatsCard({ title, value, sub, icon, iconClassName, className }: StatsCardProps) {
   return (
-    <Card className={cn("w-full", className)}>
+    <Card
+      className={cn(
+        "w-full bg-gradient-to-br from-primary/10 via-card to-card transition-shadow hover:shadow-md",
+        className
+      )}
+    >
       <CardHeader>
         <CardTitle className="truncate text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {title}
@@ -25,7 +30,7 @@ export function StatsCard({ title, value, sub, icon, iconClassName, className }:
         </CardAction>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold tracking-tight text-foreground">{value}</div>
+        <div className="text-3xl font-bold tracking-tight text-foreground">{value}</div>
         <p className="mt-1 text-xs leading-snug text-muted-foreground">{sub}</p>
       </CardContent>
     </Card>

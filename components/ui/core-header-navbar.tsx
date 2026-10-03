@@ -12,14 +12,14 @@ interface SimpleNavbarProps {
 
 export function SimpleNavbar({ icon, title, subtitle, children }: SimpleNavbarProps) {
   return (
-    <header className="relative flex flex-wrap items-center gap-3 overflow-hidden rounded-xl border bg-background/50 px-4 py-3 backdrop-blur-md">
+    <header className="relative flex flex-wrap items-center gap-3 overflow-hidden rounded-xl border bg-gradient-to-r from-primary/10 via-background/50 to-background/50 px-5 py-4 shadow-sm backdrop-blur-md">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
         style={{
           backgroundImage: `
-            linear-gradient(to right, var(--muted) 1px, transparent 1px),
-            linear-gradient(to bottom, var(--muted) 1px, transparent 1px)
+            linear-gradient(to right, var(--border) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--border) 1px, transparent 1px)
           `,
           backgroundSize: "32px 32px",
           WebkitMaskImage: "radial-gradient(ellipse 80% 80% at 0% 0%, #000 50%, transparent 90%)",
