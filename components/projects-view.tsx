@@ -16,7 +16,7 @@ import {
 import { type DisplayProject, type ManualProject, manualToDisplay, withMeta } from "@/lib/types";
 import { type ManualProjectInput } from "@/lib/manual-projects";
 import { type ProjectMeta } from "@/lib/project-meta";
-import { type ReminderView, reminderStatus } from "@/lib/reminders";
+import { type ReminderView } from "@/lib/reminders";
 import { type DomainExpiry } from "@/lib/domains";
 import {
   setProjectEnabled,
@@ -126,26 +126,10 @@ export function ProjectsView({
       })),
   ];
 
-  const frameworks = Array.from(
-    new Set(all.map((p) => p.framework).filter((f): f is string => Boolean(f)))
-  ).sort();
-
   const q = filters.search.trim().toLowerCase();
   const filtered = all.filter((p) => {
     if (q && !p.name.toLowerCase().includes(q)) return false;
-    if (filters.status !== "all" && p.status !== filters.status) return false;
-    if (filters.framework !== "all" && p.framework !== filters.framework) return false;
     if (filters.onlineOnly && !p.enabled) return false;
-
-    if (filters.renewal !== "all") {
-      const reminder = reminders[p.id];
-      if (filters.renewal === "none") return !reminder;
-      if (!reminder) return false;
-      const status = reminderStatus(reminder.daysUntil);
-      if (filters.renewal === "overdue" && status !== "overdue") return false;
-      if (filters.renewal === "due" && status !== "soon") return false;
-    }
-
     return true;
   });
 
@@ -172,7 +156,7 @@ export function ProjectsView({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ProjectsFilters value={filters} onChange={setFilters} frameworks={frameworks} />
+        <ProjectsFilters value={filters} onChange={setFilters} />
         <ProjectsTable
           projects={filtered}
           reminders={reminders}
