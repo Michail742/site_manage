@@ -1,23 +1,15 @@
 import React from "react";
 import { StatsCard } from "@/components/ui/stats-card";
-import { Globe, Activity, RefreshCw } from "lucide-react";
+import { Globe, Activity } from "lucide-react";
 import { type DisplayProject } from "@/lib/types";
 
 function calcMetrics(projects: DisplayProject[]) {
-  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-
-  let ready = 0;
-  let recentDeploys = 0;
-
-  for (const p of projects) {
-    if (p.status === "READY" && p.enabled) ready++;
-    if (p.deployedAt && p.deployedAt >= sevenDaysAgo) recentDeploys++;
-  }
+  const ready = projects.filter((p) => p.status === "READY" && p.enabled).length;
 
   const uptimePct =
     projects.length > 0 ? Math.round((ready / projects.length) * 100) : 0;
 
-  return { total: projects.length, ready, uptimePct, recentDeploys };
+  return { total: projects.length, ready, uptimePct };
 }
 
 interface MetricCardsProps {
@@ -25,7 +17,7 @@ interface MetricCardsProps {
 }
 
 export function MetricCards({ projects }: MetricCardsProps) {
-  const { total, ready, uptimePct, recentDeploys } = calcMetrics(projects);
+  const { total, ready, uptimePct } = calcMetrics(projects);
 
   const cards: {
     label: string;
@@ -51,18 +43,10 @@ export function MetricCards({ projects }: MetricCardsProps) {
       iconColor: uptimePct === 100 ? "text-green-500" : uptimePct >= 80 ? "text-yellow-500" : "text-red-500",
       iconBg: uptimePct === 100 ? "bg-green-500/10" : uptimePct >= 80 ? "bg-yellow-500/10" : "bg-red-500/10",
     },
-    {
-      label: "Πρόσφατα Updates",
-      value: recentDeploys,
-      sub: "deployments τις τελευταίες 7 μέρες",
-      icon: RefreshCw,
-      iconColor: "text-violet-500",
-      iconBg: "bg-violet-500/10",
-    },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-2 gap-4">
       {cards.map(({ label, value, sub, icon: Icon, iconColor, iconBg }) => (
         <StatsCard
           key={label}
