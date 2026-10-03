@@ -22,6 +22,9 @@ import { AccountActions } from "@/components/account-actions";
 import { TabLock } from "@/components/tab-lock";
 import { SimpleNavbar } from "@/components/ui/core-header-navbar";
 
+// Projects που υπάρχουν στο Cloudflare αλλά δεν θέλουμε στη λίστα (δεν διαγράφονται).
+const HIDDEN_PROJECTS = ["onemorebite", "mia-anasa"];
+
 async function DashboardContent() {
   if (!(await isValidSession((await cookies()).get(SESSION_COOKIE)?.value))) redirect("/login");
   const [allProjects, cloudflareResult, reminders, manualProjects, groups, meta, keziahCredit] =
@@ -45,6 +48,7 @@ async function DashboardContent() {
     .map(toDisplayProject)
     .map((p) => withMeta(p, meta));
   const cloudflareProjects = cloudflareResult
+    .filter((p) => !HIDDEN_PROJECTS.includes(p.name))
     .map(cfToDisplayProject)
     .map((p) => withMeta(p, meta));
 
