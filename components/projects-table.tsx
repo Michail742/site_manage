@@ -173,7 +173,12 @@ function withGroups(
 }
 
 // Projects με λογότυπο στο public/logos/<όνομα>.png
-const LOGOS = new Set(["anyweather", "yachtshelter", "keziah"]);
+const LOGOS: Record<string, string> = {
+  anyweather: "anyweather",
+  yachtshelter: "yachtshelter",
+  "yachtshelter-old": "yachtshelter",
+  keziah: "keziah",
+};
 
 const INDENT_CLASS = ["", "pl-4", "pl-8", "pl-12"];
 
@@ -254,10 +259,10 @@ export function ProjectsTable({
                     )}
                   </button>
                 )}
-                {LOGOS.has(name.toLowerCase()) && (
+                {LOGOS[name.toLowerCase()] && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={`/logos/${name.toLowerCase()}.png`}
+                    src={`/logos/${LOGOS[name.toLowerCase()]}.png`}
                     alt=""
                     className="w-6 h-6 rounded-md border object-cover shrink-0"
                   />
