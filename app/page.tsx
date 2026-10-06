@@ -14,6 +14,7 @@ import { getManualProjects } from "@/lib/manual-projects";
 import { getKeziahCredit } from "@/lib/keziah-credit";
 import { KeziahCreditCard } from "@/components/keziah-credit-card";
 import { getProjectGroups } from "@/lib/project-groups";
+import { getDealIds } from "@/lib/project-deals";
 import { getProjectMeta } from "@/lib/project-meta";
 import { getDomainExpiries } from "@/lib/domains";
 import { manualToDisplay, withMeta } from "@/lib/types";
@@ -27,7 +28,7 @@ const HIDDEN_PROJECTS = ["onemorebite", "mia-anasa"];
 
 async function DashboardContent() {
   if (!(await isValidSession((await cookies()).get(SESSION_COOKIE)?.value))) redirect("/login");
-  const [allProjects, cloudflareResult, reminders, manualProjects, groups, meta, keziahCredit] =
+  const [allProjects, cloudflareResult, reminders, manualProjects, groups, meta, keziahCredit, dealIds] =
     await Promise.all([
       getProjects(),
       getPagesProjects().catch((err) => {
@@ -42,6 +43,7 @@ async function DashboardContent() {
         console.error("Keziah credit failed:", err);
         return { error: "Δεν φορτώθηκε το υπόλοιπο" };
       }),
+      getDealIds(),
     ]);
   const vercelProjects = allProjects
     .filter((p) => p.id !== process.env.VERCEL_PROJECT_ID)
@@ -77,6 +79,7 @@ async function DashboardContent() {
         reminders={reminders}
         domainExpiries={domainExpiries}
         groups={groups}
+        dealIds={dealIds}
       />
     </div>
   );

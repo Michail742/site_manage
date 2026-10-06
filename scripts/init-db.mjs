@@ -149,6 +149,14 @@ await sql`
   )
 `;
 
+// Projects με συμφωνία πελάτη (το "Έχει συμφωνία" του NewProjectPrompt).
+await sql`
+  CREATE TABLE IF NOT EXISTS project_deals (
+    project_id TEXT PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )
+`;
+
 const [{ count: reminderCount }] = await sql`SELECT count(*)::int AS count FROM project_reminders`;
 const [{ count: manualCount }] = await sql`SELECT count(*)::int AS count FROM manual_projects`;
 const [{ count: groupCount }] = await sql`SELECT count(*)::int AS count FROM project_groups`;

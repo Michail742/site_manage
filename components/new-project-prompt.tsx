@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { ReminderDialog } from "@/components/reminder-dialog";
 import { type DisplayProject } from "@/lib/types";
-import { markProjectPersonal } from "@/app/actions";
+import { markProjectDeal, markProjectPersonal } from "@/app/actions";
 
 interface NewProjectPromptProps {
   /** Το project που δεν έχει ταξινομηθεί ακόμα (ή null αν δεν υπάρχει). */
@@ -44,9 +44,22 @@ export function NewProjectPrompt({ project, onSkip, onChanged }: NewProjectPromp
     });
   }
 
-  // Συμφωνία = ορίζεται υπενθύμιση ανανέωσης. Η αποθήκευση την κάνει το
-  // ReminderDialog· αν ακυρωθεί, το project μένει αταξινόμητο και ξαναρωτάμε
-  // στην επόμενη φόρτωση.
+  // Η συμφωνία αποθηκεύεται αμέσως· η υπενθύμιση ανανέωσης (ReminderDialog)
+  // είναι προαιρετική, οπότε η ακύρωσή της δεν ξαναφέρνει την ερώτηση.
+  function handleDeal() {
+    if (!project) return;
+    const id = project.id;
+    setError(null);
+    startTransition(async () => {
+      try {
+        await markProjectDeal(id);
+        setDealOpen(true);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Κάτι πήγε στραβά");
+      }
+    });
+  }
+
   if (dealOpen) {
     return (
       <ReminderDialog
@@ -59,6 +72,7 @@ export function NewProjectPrompt({ project, onSkip, onChanged }: NewProjectPromp
           if (next) return;
           setDealOpen(false);
           onSkip(project.id);
+          onChanged();
         }}
         onChanged={onChanged}
       />
@@ -85,7 +99,7 @@ export function NewProjectPrompt({ project, onSkip, onChanged }: NewProjectPromp
             <Button variant="outline" disabled={pending} onClick={handlePersonal}>
               Προσωπικό
             </Button>
-            <Button disabled={pending} onClick={() => setDealOpen(true)}>
+            <Button disabled={pending} onClick={handleDeal}>
               Έχει συμφωνία
             </Button>
           </div>

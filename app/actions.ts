@@ -19,6 +19,7 @@ import {
   type ProjectMetaInput,
 } from "@/lib/project-meta";
 import { setProjectPersonal } from "@/lib/project-groups";
+import { setProjectDeal } from "@/lib/project-deals";
 import { setDomainExpiry } from "@/lib/domains";
 import { setKeziahBalance } from "@/lib/keziah-credit";
 
@@ -53,6 +54,12 @@ export async function markProjectPersonal(projectId: string) {
   await requireSession();
   if (!projectId) throw new Error("Λείπει το project id");
   await setProjectPersonal(projectId);
+}
+
+export async function markProjectDeal(projectId: string) {
+  await requireSession();
+  if (!projectId) throw new Error("Λείπει το project id");
+  await setProjectDeal(projectId);
 }
 
 export async function saveDomainExpiry(domain: string, expiresOn: string | null) {

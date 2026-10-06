@@ -34,6 +34,7 @@ interface ProjectsViewProps {
   reminders: Record<string, ReminderView>;
   domainExpiries: Record<string, DomainExpiry>;
   groups: Record<string, string>;
+  dealIds: string[];
   keziahCard?: React.ReactNode;
 }
 
@@ -46,6 +47,7 @@ export function ProjectsView({
   reminders,
   domainExpiries,
   groups,
+  dealIds,
 }: ProjectsViewProps) {
   const router = useRouter();
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
@@ -128,13 +130,18 @@ export function ProjectsView({
       })),
   ];
 
-  // Αταξινόμητο = όχι μέλος/γονέας ομάδας (προσωπικό ή gamehub/anyweather) και
-  // χωρίς υπενθύμιση (συμφωνία με πελάτη). Ρωτάμε ένα-ένα, πάνω στα πλήρη
-  // δεδομένα — όχι στα φιλτραρισμένα.
+  // Αταξινόμητο = όχι μέλος/γονέας ομάδας (προσωπικό ή gamehub/anyweather), όχι
+  // σε συμφωνία πελάτη (project_deals) και χωρίς υπενθύμιση. Ρωτάμε ένα-ένα,
+  // πάνω στα πλήρη δεδομένα — όχι στα φιλτραρισμένα.
   const groupParents = new Set(Object.values(groups));
+  const deals = new Set(dealIds);
   const unclassified = all.find(
     (p) =>
-      !groups[p.id] && !groupParents.has(p.id) && !reminders[p.id] && !skippedIds.has(p.id)
+      !groups[p.id] &&
+      !groupParents.has(p.id) &&
+      !deals.has(p.id) &&
+      !reminders[p.id] &&
+      !skippedIds.has(p.id)
   );
 
   const q = filters.search.trim().toLowerCase();
