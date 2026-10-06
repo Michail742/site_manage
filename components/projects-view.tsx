@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { ProjectsTable } from "@/components/projects-table";
 import { AddProjectDialog } from "@/components/add-project-dialog";
+import { NewProjectPrompt } from "@/components/new-project-prompt";
 import {
   ProjectsFilters,
   emptyFilters,
@@ -50,6 +51,7 @@ export function ProjectsView({
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState(false);
   const [filters, setFilters] = useState<FiltersState>(emptyFilters);
+  const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
   const [, startTransition] = useTransition();
   // Optimistic on/off overrides ανά project id — αδειάζουν μόλις
   // ολοκληρωθεί το server action και έρθουν τα φρέσκα props.
@@ -126,6 +128,15 @@ export function ProjectsView({
       })),
   ];
 
+  // Αταξινόμητο = όχι μέλος/γονέας ομάδας (προσωπικό ή gamehub/anyweather) και
+  // χωρίς υπενθύμιση (συμφωνία με πελάτη). Ρωτάμε ένα-ένα, πάνω στα πλήρη
+  // δεδομένα — όχι στα φιλτραρισμένα.
+  const groupParents = new Set(Object.values(groups));
+  const unclassified = all.find(
+    (p) =>
+      !groups[p.id] && !groupParents.has(p.id) && !reminders[p.id] && !skippedIds.has(p.id)
+  );
+
   const q = filters.search.trim().toLowerCase();
   const filtered = all.filter((p) => {
     if (q && !p.name.toLowerCase().includes(q)) return false;
@@ -156,6 +167,11 @@ export function ProjectsView({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <NewProjectPrompt
+          project={unclassified ?? null}
+          onSkip={(id) => setSkippedIds((s) => new Set(s).add(id))}
+          onChanged={() => router.refresh()}
+        />
         <ProjectsFilters value={filters} onChange={setFilters} />
         <ProjectsTable
           projects={filtered}

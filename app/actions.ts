@@ -18,6 +18,7 @@ import {
   setProjectMeta as setProjectMetaDb,
   type ProjectMetaInput,
 } from "@/lib/project-meta";
+import { setProjectPersonal } from "@/lib/project-groups";
 import { setDomainExpiry } from "@/lib/domains";
 import { setKeziahBalance } from "@/lib/keziah-credit";
 
@@ -46,6 +47,12 @@ export async function scanProjects() {
 export async function saveProjectMeta(input: ProjectMetaInput) {
   await requireSession();
   await setProjectMetaDb(input);
+}
+
+export async function markProjectPersonal(projectId: string) {
+  await requireSession();
+  if (!projectId) throw new Error("Λείπει το project id");
+  await setProjectPersonal(projectId);
 }
 
 export async function saveDomainExpiry(domain: string, expiresOn: string | null) {

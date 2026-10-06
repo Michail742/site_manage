@@ -79,10 +79,26 @@ interface ReminderDialogProps {
   project: DisplayProject;
   reminder: ReminderView | null;
   onChanged: () => void;
+  /** Προαιρετικά: έλεγχος από τον γονέα (π.χ. άνοιγμα από το NewProjectPrompt). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }
 
-export function ReminderDialog({ project, reminder, onChanged }: ReminderDialogProps) {
-  const [open, setOpen] = useState(false);
+export function ReminderDialog({
+  project,
+  reminder,
+  onChanged,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger,
+}: ReminderDialogProps) {
+  const [innerOpen, setInnerOpen] = useState(false);
+  const open = controlledOpen ?? innerOpen;
+  const setOpen = (next: boolean) => {
+    setInnerOpen(next);
+    onOpenChange?.(next);
+  };
   const [form, setForm] = useState<FormState>(() => initialForm(reminder));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -139,22 +155,24 @@ export function ReminderDialog({ project, reminder, onChanged }: ReminderDialogP
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2"
-            aria-label={
-              reminder
-                ? `Επεξεργασία υπενθύμισης για ${project.name}`
-                : `Ορισμός υπενθύμισης για ${project.name}`
-            }
-          />
-        }
-      >
-        <BellPlus className="h-3.5 w-3.5" />
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2"
+              aria-label={
+                reminder
+                  ? `Επεξεργασία υπενθύμισης για ${project.name}`
+                  : `Ορισμός υπενθύμισης για ${project.name}`
+              }
+            />
+          }
+        >
+          <BellPlus className="h-3.5 w-3.5" />
+        </DialogTrigger>
+      )}
 
       <DialogContent className="sm:max-w-md" showCloseButton={false}>
         <DialogHeader>

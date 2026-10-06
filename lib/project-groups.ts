@@ -11,3 +11,12 @@ export async function getProjectGroups(): Promise<Record<string, string>> {
   const rows = (await sql`SELECT child_id, parent_id FROM project_groups`) as Row[];
   return Object.fromEntries(rows.map((r) => [r.child_id, r.parent_id]));
 }
+
+export async function setProjectPersonal(projectId: string) {
+  const sql = getSql();
+  await sql`
+    INSERT INTO project_groups (child_id, parent_id)
+    VALUES (${projectId}, 'virtual_personal')
+    ON CONFLICT (child_id) DO NOTHING
+  `;
+}
