@@ -56,6 +56,12 @@ export function KeziahCreditCard({ credit }: Props) {
                 {` · ξοδεύτηκαν $${ok.spentUsd.toFixed(2)} από ${new Date(ok.since).toLocaleDateString("el-GR")}`}
               </p>
             )}
+            {ok?.outliers.map((s) => (
+              <p key={s.id} className="text-xs font-medium text-destructive">
+                ⚠ Τιμολόγιο #{s.id} ({new Date(s.createdAt).toLocaleDateString("el-GR")}): ${s.usd.toFixed(3)} ·{" "}
+                {s.input.toLocaleString("el-GR")} εισόδου / {s.output.toLocaleString("el-GR")} εξόδου tokens
+              </p>
+            ))}
             {credit && "error" in credit && (
               <p className="text-xs text-destructive">{credit.error}</p>
             )}

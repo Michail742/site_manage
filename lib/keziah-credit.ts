@@ -7,12 +7,27 @@ export interface KeziahCredit {
   remainingUsd: number;
   avgScanUsd: number | null;
   scansLeft: number | null;
+  outliers: Scan[]; // πρόσφατα τιμολόγια που ξεπέρασαν τα όρια
+}
+
+interface Scan {
+  id: number;
+  createdAt: string;
+  input: number;
+  output: number;
+  usd: number;
 }
 
 interface Usage {
   total: { scans: number; usd: number };
   since: { scans: number; usd: number } | null;
+  recent?: Scan[];
 }
+
+// Βάση: ~$0,033 ανά τιμολόγιο (είσοδος ~9.800, έξοδος ~1.300 tokens). Πάνω από αυτά = «ξέφυγε».
+const MAX_USD = 0.1;
+const MAX_INPUT = 20_000;
+const MAX_OUTPUT = 6_000;
 
 /**
  * Το Anthropic δεν δίνει το υπόλοιπο credits μέσω API key. Κρατάμε εδώ το υπόλοιπο που δήλωσε ο
@@ -51,6 +66,7 @@ export async function getKeziahCredit(): Promise<KeziahCredit | { error: string 
       remainingUsd,
       avgScanUsd,
       scansLeft: avgScanUsd ? Math.max(0, Math.floor(remainingUsd / avgScanUsd)) : null,
+      outliers: (usage.recent ?? []).filter((s) => s.usd > MAX_USD || s.input > MAX_INPUT || s.output > MAX_OUTPUT),
     };
   } catch {
     return { error: "Το keziah δεν απαντά" };
