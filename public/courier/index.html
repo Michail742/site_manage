@@ -624,7 +624,8 @@ tr:hover { background: var(--bg-soft); }
 
   <!-- VAT -->
   <div class="tab-content" id="tab-vat">
-    <div class="info-banner">Οι διανομείς με τζίρο &lt; 10.000€ μπορούν να υπάγονται σε καθεστώς απαλλαγής ΦΠΑ. Πάνω από αυτό το όριο χρεώνεις 24% ΦΠΑ και αποδίδεις τη διαφορά εκροών − εισροών στο TAXIS ανά τρίμηνο.</div>
+    <div class="info-banner">Οι διανομείς με τζίρο &lt; 10.000€ μπορούν να υπάγονται σε καθεστώς απαλλαγής ΦΠΑ. Πάνω από αυτό το όριο χρεώνεις 24% ΦΠΑ και αποδίδεις τη διαφορά εκροών − εισροών στο TAXIS <strong>κάθε μήνα</strong>, έως την τελευταία εργάσιμη του επόμενου μήνα (με δυνατότητα 2 ισόποσων δόσεων).</div>
+    <div class="warn-banner" id="vatUnpaidBanner" style="display:none;"></div>
 
     <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
       <div class="kpi-card"><div class="kpi-label">ΦΠΑ Εκροών</div><div class="kpi-value" id="vatOutput">0,00 €</div><div class="kpi-sub">— Που χρωστάς</div></div>
@@ -1733,6 +1734,14 @@ const ACCOUNTANT_VAT = {
   '2026-06': 126.66, '2026-07': 172.72, '2026-08': 104.66, '2026-09': 161.71
 };
 
+// Πληρωμένοι μήνες ΦΠΑ: ο χρήστης (8/10/2026) είπε ότι πληρώνει κάθε μήνα και έχει ξοφλήσει όλους
+// εκτός του τελευταίου (ΦΠΑ 09/2026). Ό,τι τσεκάρει/ξετσεκάρει μετά αποθηκεύεται και υπερισχύει.
+const VAT_MONTH_PAID_UNTIL = '2026-08';
+function vatMonthChecked(key) {
+  const v = checklists.vat['vat_m_' + key];
+  return v !== undefined ? v : key <= VAT_MONTH_PAID_UNTIL;
+}
+
 // Προθεσμία πληρωμής: τελευταία εργάσιμη (Δευ–Παρ) του ΕΠΟΜΕΝΟΥ μήνα — έτσι έβαζε ο λογιστής
 // 27/2, 31/3, 30/4, 29/5, 30/6, 31/7, 31/8, 30/9, 30/10. Αργίες δεν λαμβάνονται υπόψη.
 function vatDueDate(key) {
@@ -1777,6 +1786,23 @@ function renderVatMonthly(data, expData, isVatExempt) {
     <td class="mono">${vatDueDate(r.key)}</td>
     <td class="mono">${ACCOUNTANT_VAT[r.key] === undefined ? '—' : fmtEur(ACCOUNTANT_VAT[r.key])}</td>
   </tr>`).join('');
+
+  // Απλήρωτο ΦΠΑ: δηλωμένοι μήνες που δεν είναι τσεκαρισμένοι (κάτω από 30€ δεν πληρώνεται)
+  const unpaidBox = document.getElementById('vatUnpaidBanner');
+  if (unpaidBox) {
+    const unpaid = Object.keys(ACCOUNTANT_VAT).sort()
+      .filter(k => !vatMonthChecked(k) && ACCOUNTANT_VAT[k] >= 30);
+    if (unpaid.length) {
+      const sum = unpaid.reduce((t, k) => t + ACCOUNTANT_VAT[k], 0);
+      unpaidBox.textContent = 'Απλήρωτο ΦΠΑ: ' + unpaid.map(k => {
+        const [y, m] = k.split('-');
+        return `${m}/${y} ${fmtEur(ACCOUNTANT_VAT[k])} (προθεσμία ${vatDueDate(k)})`;
+      }).join(' · ') + ` — σύνολο ${fmtEur(sum)}. Δυνατότητα 2 ισόποσων δόσεων.`;
+      unpaidBox.style.display = '';
+    } else {
+      unpaidBox.style.display = 'none';
+    }
+  }
 
   const totalEl = document.getElementById('vatMonthlyTotal');
   if (totalEl) totalEl.textContent = fmtEur(rows.reduce((t, r) => t + r.vatDue, 0));
@@ -1853,20 +1879,28 @@ function renderEFKA(efkaPaid) {
 function renderChecklists() {
   const vatList = document.getElementById('vatChecklist');
   if (vatList) {
-    const items = [
-      { id: 'vat_q1_2026', text: 'Δήλωση ΦΠΑ Α\' Τριμήνου 2026 (Ιαν-Μαρ)', date: '30/04/2026' },
-      { id: 'vat_q2_2026', text: 'Δήλωση ΦΠΑ Β\' Τριμήνου 2026 (Απρ-Ιουν)', date: '31/07/2026' },
-      { id: 'vat_q3_2026', text: 'Δήλωση ΦΠΑ Γ\' Τριμήνου 2026 (Ιουλ-Σεπ)', date: '31/10/2026' },
-      { id: 'vat_q4_2026', text: 'Δήλωση ΦΠΑ Δ\' Τριμήνου 2026 (Οκτ-Δεκ)', date: '31/01/2027' },
+    // Το ΦΠΑ πληρώνεται ΚΑΘΕ ΜΗΝΑ (όχι τριμηνιαία) — ένα στοιχείο ανά δηλωμένο μήνα.
+    const items = Object.keys(ACCOUNTANT_VAT).sort().map(key => {
+      const [y, m] = key.split('-');
+      const amt = ACCOUNTANT_VAT[key];
+      return {
+        id: 'vat_m_' + key, checked: vatMonthChecked(key), date: vatDueDate(key),
+        text: `ΦΠΑ ${VAT_MONTH_NAMES[parseInt(m, 10) - 1]} ${y} — ${fmtEur(amt)}` +
+              (amt < 30 ? ' (κάτω από 30€ — μεταφέρεται στο επόμενο)' : '')
+      };
+    }).concat([
       { id: 'tax_annual_2025', text: '📋 Φορολογική δήλωση εισοδήματος 2025', date: '15/07/2026' },
       { id: 'tax_annual_2026', text: '📋 Φορολογική δήλωση εισοδήματος 2026', date: '15/07/2027' }
-    ];
-    vatList.innerHTML = items.map(i => `
-      <div class="checklist-item ${checklists.vat[i.id] ? 'done' : ''}">
-        <input type="checkbox" ${checklists.vat[i.id] ? 'checked' : ''} onchange="toggleCheck('vat', '${i.id}')">
+    ]);
+    vatList.innerHTML = items.map(i => {
+      const on = i.checked !== undefined ? i.checked : checklists.vat[i.id];
+      return `
+      <div class="checklist-item ${on ? 'done' : ''}">
+        <input type="checkbox" ${on ? 'checked' : ''} onchange="toggleCheck('vat', '${i.id}')">
         <span class="checklist-text">${i.text}</span>
         <span class="checklist-date">${i.date}</span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
   
   const efkaList = document.getElementById('efkaChecklist');
@@ -1885,7 +1919,8 @@ function renderChecklists() {
 }
 
 async function toggleCheck(type, id) {
-  checklists[type][id] = !checklists[type][id];
+  const cur = (type === 'vat' && id.startsWith('vat_m_')) ? vatMonthChecked(id.slice(6)) : checklists[type][id];
+  checklists[type][id] = !cur;
   await saveChecklists();
   renderChecklists();
 }
