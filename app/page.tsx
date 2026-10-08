@@ -119,7 +119,16 @@ export default function OverviewPage() {
           title="Admin Dashboard"
           subtitle="Overview των web projects σου"
         >
-          <AccountActions />
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+            {/* Απλό <a> (όχι next/link): πάει σε στατικό αρχείο, όχι σε route του Next */}
+            <a
+              href="/courier/index.html"
+              className="inline-flex h-8 items-center rounded-lg border px-3 text-sm font-medium hover:bg-muted"
+            >
+              Διανομή
+            </a>
+            <AccountActions />
+          </div>
         </SimpleNavbar>
 
         <Suspense fallback={<DashboardSkeleton />}>
